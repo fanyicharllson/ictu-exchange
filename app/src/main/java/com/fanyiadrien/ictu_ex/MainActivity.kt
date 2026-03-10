@@ -4,15 +4,12 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.navigation.compose.rememberNavController
+import com.fanyiadrien.ictu_ex.core.navigation.NavGraph
+import com.fanyiadrien.ictu_ex.core.navigation.Screen
 import com.fanyiadrien.ictu_ex.ui.theme.IctuExTheme
 
 class MainActivity : ComponentActivity() {
@@ -20,30 +17,21 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
+            // darkTheme state — LightSensorManager will update this value
+            val darkTheme by remember { mutableStateOf(false) }
             IctuExTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
+                val navController = rememberNavController()
+
+                // Change startDestination to Screen.Home.route once user is already logged in
+                // (check SharedPreferences or Firebase auth state here later)
+                NavGraph(
+                    navController = navController,
+                    startDestination = Screen.Onboarding.route
+                )
+
             }
         }
     }
 }
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = Modifier.background(Color.LightGray).then(modifier)
-    )
-}
 
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    IctuExTheme {
-        Greeting("Android")
-    }
-}
