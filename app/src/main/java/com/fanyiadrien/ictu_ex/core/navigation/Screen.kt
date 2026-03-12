@@ -50,4 +50,7 @@ sealed class Screen(val route: String) {
 
     /** User profile screen. */
     object Profile : Screen("profile")
+
+    /* Settings Screen */
+    object Settings: Screen("settings")
 }

@@ -3,6 +3,8 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.googleDevtoolsKsp)
+    // alias(libs.plugins.googleServices)
+
 }
 
 android {
@@ -67,6 +69,18 @@ dependencies {
     implementation(libs.androidx.camera.view)
     implementation(libs.google.barcode.scanning)
 
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth)
+    implementation(libs.firebase.firestore)
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.gson)
+    implementation(libs.okhttp.logging)
+
+    // Cloudinary SDK
+    implementation(libs.cloudinary.android)
+
+    // Coil (To display the Cloudinary URLs in your UI)
+    implementation(libs.coil.compose)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

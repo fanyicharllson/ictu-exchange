@@ -30,10 +30,6 @@ import com.fanyiadrien.ictu_ex.ui.theme.*
 import kotlinx.coroutines.delay
 import androidx.compose.foundation.Image
 
-// ─────────────────────────────────────────────────────────────────────────────
-// ROOT SCREEN COMPOSABLE
-// ─────────────────────────────────────────────────────────────────────────────
-
 @Composable
 fun OnboardingScreen(
     navController: NavController,
@@ -148,11 +144,6 @@ fun OnboardingScreen(
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// HERO IMAGE COMPOSABLE
-// Top section: gradient background + centered shoe image
-// ─────────────────────────────────────────────────────────────────────────────
-
 @Composable
 fun OnboardingHeroImage(
     scale: Float,
@@ -189,11 +180,6 @@ fun OnboardingHeroImage(
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PAGE INDICATOR COMPOSABLE
-// 3 rounded dots — active one is wider and Purple40
-// ─────────────────────────────────────────────────────────────────────────────
-
 @Composable
 fun PageIndicator(
     currentPage: Int,
@@ -219,11 +205,6 @@ fun PageIndicator(
         }
     }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// GET STARTED BUTTON COMPOSABLE
-// Full-width pill CTA button
-// ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
 fun GetStartedButton(
@@ -255,10 +236,6 @@ fun GetStartedButton(
         )
     }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// PREVIEW
-// ─────────────────────────────────────────────────────────────────────────────
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable

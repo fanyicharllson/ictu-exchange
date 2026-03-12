@@ -17,6 +17,12 @@ camerax = "1.3.1"
 barcodeScanning = "17.2.0"
 fragment = "1.8.9" # For QR Code reading
 
+# firebase and cloudinary/cloudflare depencies
+firebaseBom = "32.7.2"
+retrofit = "2.9.0"
+okhttp = "4.12.0"
+cloudinary = "2.3.0"
+
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -51,10 +57,28 @@ androidx-camera-view = { group = "androidx.camera", name = "camera-view", versio
 google-barcode-scanning = { group = "com.google.mlkit", name = "barcode-scanning", version.ref = "barcodeScanning" }
 androidx-fragment = { group = "androidx.fragment", name = "fragment", version.ref = "fragment" }
 
+# firebase and cloudflare/cloudinary
+# Firebase
+firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
+firebase-auth = { group = "com.google.firebase", name = "firebase-auth-ktx" }
+firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore-ktx" }
+
+# Networking (For Cloudflare R2 Uploads)
+retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
+retrofit-gson = { group = "com.squareup.retrofit2", name = "converter-gson", version.ref = "retrofit" }
+okhttp-logging = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "okhttp" }
+
+cloudinary-android = { group = "com.cloudinary", name = "cloudinary-android", version.ref = "cloudinary" }
+
+# Add these if you don't have them for image loading in Compose
+coil-compose = { group = "io.coil-kt", name = "coil-compose", version = "2.6.0" }
+
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+
+googleServices = { id = "com.google.gms.google-services", version = "4.4.1" }
 
 # Add KSP for Room (Modern alternative to kapt)
 googleDevtoolsKsp = { id = "com.google.devtools.ksp", version = "2.0.21-1.0.25" }
