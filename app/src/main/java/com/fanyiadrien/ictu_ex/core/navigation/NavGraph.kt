@@ -1,5 +1,6 @@
 package com.fanyiadrien.ictu_ex.core.navigation
 
+import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -9,7 +10,11 @@ import androidx.navigation.navArgument
 import com.fanyiadrien.ictu_ex.feature.auth.CheckStatusScreen
 import com.fanyiadrien.ictu_ex.feature.auth.SignInScreen
 import com.fanyiadrien.ictu_ex.feature.auth.SignUpScreen
+import com.fanyiadrien.ictu_ex.feature.home.HomeScreen
 import com.fanyiadrien.ictu_ex.feature.onboarding.OnboardingScreen
+import com.google.firebase.auth.FirebaseAuth
+
+private const val TAG = "ICTU_NavGraph"
 
 /**
  * Central NavGraph for ICTU-Ex.
@@ -25,7 +30,8 @@ import com.fanyiadrien.ictu_ex.feature.onboarding.OnboardingScreen
 @Composable
 fun NavGraph(
     navController: NavHostController,
-    startDestination: String = Screen.Onboarding.route
+    startDestination: String = Screen.Onboarding.route,
+    auth: FirebaseAuth
 ) {
     NavHost(
         navController    = navController,
@@ -34,10 +40,12 @@ fun NavGraph(
 
         // ── Onboarding ────────────────────────────────────────────────────────
         composable(route = Screen.Onboarding.route) {
+            Log.d(TAG, "Entering route: ${Screen.Onboarding.route}")
             OnboardingScreen(navController = navController)
         }
 
         composable(route = Screen.CheckStatus.route) {
+            Log.d(TAG, "Entering route: ${Screen.CheckStatus.route}")
             CheckStatusScreen(navController = navController)
         }
 
@@ -49,16 +57,19 @@ fun NavGraph(
             )
         ) { backStackEntry ->
             val userType = backStackEntry.arguments?.getString("userType") ?: "BUYER"
+            Log.d(TAG, "Entering route: sign_up with userType=$userType")
             SignUpScreen(navController = navController, userType = userType)
         }
 
         composable(route = Screen.SignIn.route) {
+            Log.d(TAG, "Entering route: ${Screen.SignIn.route}")
             SignInScreen(navController = navController)
         }
 
         // ── Main App ──────────────────────────────────────────────────────────
         composable(route = Screen.Home.route) {
-            // TODO: HomeScreen()
+            Log.d(TAG, "Entering route: ${Screen.Home.route}")
+            HomeScreen(auth = auth)
         }
 
         composable(

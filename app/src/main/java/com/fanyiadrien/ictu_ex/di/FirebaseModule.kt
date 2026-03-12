@@ -1,7 +1,6 @@
 package com.fanyiadrien.ictu_ex.di
 
-import com.google.android.datatransport.runtime.dagger.Module
-import com.google.android.datatransport.runtime.dagger.Provides
+import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import dagger.Module
@@ -19,11 +18,19 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object FirebaseModule {
 
-    @Provides
-    @Singleton
-    fun provideFirebaseAuth(): FirebaseAuth = FirebaseAuth.getInstance()
+    private const val TAG = "ICTU_FirebaseModule"
 
     @Provides
     @Singleton
-    fun provideFirestore(): FirebaseFirestore = FirebaseFirestore.getInstance()
+    fun provideFirebaseAuth(): FirebaseAuth {
+        Log.d(TAG, "Providing FirebaseAuth instance")
+        return FirebaseAuth.getInstance()
+    }
+
+    @Provides
+    @Singleton
+    fun provideFirestore(): FirebaseFirestore {
+        Log.d(TAG, "Providing FirebaseFirestore instance")
+        return FirebaseFirestore.getInstance()
+    }
 }

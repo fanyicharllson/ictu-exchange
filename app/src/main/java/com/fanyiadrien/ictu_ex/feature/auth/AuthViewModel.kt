@@ -1,114 +1,150 @@
 package com.fanyiadrien.ictu_ex.feature.auth
 
+import android.util.Log
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseUser
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
+import com.fanyiadrien.ictu_ex.data.repository.AuthRepository
+import com.fanyiadrien.ictu_ex.utils.AppResult
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
+import javax.inject.Inject
 
 /**
- * AuthViewModel handles authentication logic for ICTU-Ex.
+ * Shared ViewModel for all auth screens:
+ * SignUpScreen, SignInScreen, CheckStatusScreen.
  *
- * Manages sign-in and sign-up flows with Firebase Authentication.
- * Provides UI state for loading, success, and error states.
+ * Your teammate injects this into any auth screen like:
+ *   val viewModel: AuthViewModel = hiltViewModel()
+ *
+ * Then reads state and calls functions:
+ *   viewModel.signUp(...)
+ *   viewModel.uiState.isLoading
+ *   viewModel.uiState.errorMessage
  */
-class AuthViewModel : ViewModel() {
+@HiltViewModel
+class AuthViewModel @Inject constructor(
+    private val authRepository: AuthRepository
+) : ViewModel() {
 
-    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+    companion object {
+        private const val TAG = "ICTU_AuthVM"
+    }
 
-    // UI State
-    private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
-    val authState: StateFlow<AuthState> = _authState
+    // ─── UI State ─────────────────────────────────────────────────────────────
+    // One state object — screen reads this and reacts automatically
 
-    // Current user
-    val currentUser: FirebaseUser?
-        get() = auth.currentUser
+    var uiState by mutableStateOf(AuthUiState())
+        private set
+
+    // ─── Actions ──────────────────────────────────────────────────────────────
 
     /**
-     * Sign in with email and password
+     * Call from SignUpScreen when user taps "Create Account".
+     *
+     * Example:
+     *   viewModel.signUp(
+     *       email       = emailInput,
+     *       password    = passwordInput,
+     *       displayName = nameInput,
+     *       studentId   = studentIdInput,
+     *       userType    = userType,       // passed from CheckStatusScreen
+     *       onSuccess   = {
+     *           navController.navigate(Screen.Home.route) {
+     *               popUpTo(Screen.Onboarding.route) { inclusive = true }
+     *           }
+     *       }
+     *   )
      */
-    fun signIn(email: String, password: String) {
-        if (email.isBlank() || password.isBlank()) {
-            _authState.value = AuthState.Error("Email and password cannot be empty")
-            return
-        }
-
-        _authState.value = AuthState.Loading
+    fun signUp(
+        email: String,
+        password: String,
+        displayName: String,
+        studentId: String,
+        userType: String,
+        onSuccess: () -> Unit
+    ) {
+        Log.d(TAG, "signUp() called for userType=$userType, email=$email")
         viewModelScope.launch {
-            try {
-                auth.signInWithEmailAndPassword(email, password).await()
-                _authState.value = AuthState.Success
-            } catch (e: Exception) {
-                _authState.value = AuthState.Error(getAuthErrorMessage(e))
+            uiState = uiState.copy(isLoading = true, errorMessage = null)
+
+            when (val result = authRepository.signUp(email, password, displayName, studentId, userType)) {
+                is AppResult.Success -> {
+                    Log.d(TAG, "signUp() success")
+                    uiState = uiState.copy(isLoading = false)
+                    onSuccess()
+                }
+                is AppResult.Error -> {
+                    Log.e(TAG, "signUp() error: ${result.message}", result.cause)
+                    uiState = uiState.copy(
+                        isLoading    = false,
+                        errorMessage = result.message   // ready to display in UI
+                    )
+                }
+                else -> Unit
             }
         }
     }
 
     /**
-     * Sign up with email, password, and user type
+     * Call from SignInScreen when user taps "Sign In".
+     *
+     * Example:
+     *   viewModel.signIn(
+     *       email    = emailInput,
+     *       password = passwordInput,
+     *       onSuccess = {
+     *           navController.navigate(Screen.Home.route) {
+     *               popUpTo(Screen.Onboarding.route) { inclusive = true }
+     *           }
+     *       }
+     *   )
      */
-    fun signUp(email: String, password: String, userType: String) {
-        if (email.isBlank() || password.isBlank()) {
-            _authState.value = AuthState.Error("Email and password cannot be empty")
-            return
-        }
-
-        if (password.length < 6) {
-            _authState.value = AuthState.Error("Password must be at least 6 characters")
-            return
-        }
-
-        _authState.value = AuthState.Loading
+    fun signIn(
+        email: String,
+        password: String,
+        onSuccess: () -> Unit
+    ) {
+        Log.d(TAG, "signIn() called for email=$email")
         viewModelScope.launch {
-            try {
-                auth.createUserWithEmailAndPassword(email, password).await()
-                // TODO: Save user type to Firestore or user profile
-                _authState.value = AuthState.Success
-            } catch (e: Exception) {
-                _authState.value = AuthState.Error(getAuthErrorMessage(e))
+            uiState = uiState.copy(isLoading = true, errorMessage = null)
+
+            when (val result = authRepository.signIn(email, password)) {
+                is AppResult.Success -> {
+                    Log.d(TAG, "signIn() success")
+                    uiState = uiState.copy(isLoading = false)
+                    onSuccess()
+                }
+                is AppResult.Error -> {
+                    Log.e(TAG, "signIn() error: ${result.message}", result.cause)
+                    uiState = uiState.copy(
+                        isLoading    = false,
+                        errorMessage = result.message
+                    )
+                }
+                else -> Unit
             }
         }
     }
 
-    /**
-     * Sign out current user
-     */
-    fun signOut() {
-        auth.signOut()
-        _authState.value = AuthState.Idle
-    }
-
-    /**
-     * Reset auth state to idle
-     */
-    fun resetState() {
-        _authState.value = AuthState.Idle
-    }
-
-    /**
-     * Convert Firebase auth exceptions to user-friendly messages
-     */
-    private fun getAuthErrorMessage(exception: Exception): String {
-        return when (exception.message) {
-            "The email address is badly formatted." -> "Please enter a valid email address"
-            "The password is invalid or the user does not have a password." -> "Invalid password"
-            "There is no user record corresponding to this identifier. The user may have been deleted." -> "No account found with this email"
-            "The email address is already in use by another account." -> "An account with this email already exists"
-            "A network error (such as timeout, interrupted connection or unreachable host) has occurred." -> "Network error. Please check your connection"
-            else -> "Authentication failed. Please try again"
-        }
+    /** Call this when user dismisses an error snackbar or dialog. */
+    fun clearError() {
+        uiState = uiState.copy(errorMessage = null)
     }
 }
+
+// ─── UI State Model ───────────────────────────────────────────────────────────
 
 /**
- * Authentication UI state
+ * Everything the screen needs to know about current auth state.
+ *
+ * In your Composable:
+ *   if (uiState.isLoading) CircularProgressIndicator()
+ *   uiState.errorMessage?.let { ErrorText(it) }
  */
-sealed class AuthState {
-    object Idle : AuthState()
-    object Loading : AuthState()
-    object Success : AuthState()
-    data class Error(val message: String) : AuthState()
-}
+data class AuthUiState(
+    val isLoading: Boolean    = false,
+    val errorMessage: String? = null    // null means no error
+)

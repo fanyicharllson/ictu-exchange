@@ -1,5 +1,6 @@
 package com.fanyiadrien.ictu_ex.feature.auth
 
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
@@ -19,53 +20,44 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.fanyiadrien.ictu_ex.R
 import com.fanyiadrien.ictu_ex.core.navigation.Screen
-import com.fanyiadrien.ictu_ex.ui.theme.*
+import com.fanyiadrien.ictu_ex.ui.theme.IctuExTheme
+
+private const val TAG = "ICTU_SignIn"
 
 @Composable
 fun SignInScreen(
     navController: NavController,
-    viewModel: AuthViewModel = viewModel()
+    viewModel: AuthViewModel = hiltViewModel()   // ← hiltViewModel(), not viewModel()
 ) {
-    val authState by viewModel.authState.collectAsState()
+    Log.d(TAG, "SignInScreen composed")
+    val uiState = viewModel.uiState              // ← our uiState
     val focusManager = LocalFocusManager.current
 
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    var email          by remember { mutableStateOf("") }
+    var password       by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
 
-    // Handle auth state changes
-    LaunchedEffect(authState) {
-        when (authState) {
-            is AuthState.Success -> {
-                // Navigate to home and clear back stack
-                navController.navigate(Screen.Home.route) {
-                    popUpTo(Screen.Onboarding.route) { inclusive = true }
-                }
-            }
-            else -> {} // Handle other states in UI
-        }
-    }
-
-    Scaffold { paddingValues ->
+    // ── Fix: explicit background ────────────────────────────────────────────
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background
+    ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(64.dp))
 
-            // App Logo/Icon
             Icon(
-                painter = painterResource(id = R.drawable.email), // TODO: Replace with actual logo
+                painter = painterResource(id = R.drawable.ic_launcher_foreground),
                 contentDescription = "ICTU-Ex Logo",
                 modifier = Modifier.size(80.dp),
                 tint = MaterialTheme.colorScheme.primary
@@ -73,7 +65,6 @@ fun SignInScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Title
             Text(
                 text = "Welcome Back",
                 style = MaterialTheme.typography.headlineMedium,
@@ -83,7 +74,6 @@ fun SignInScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Subtitle
             Text(
                 text = "Sign in to your ICTU-Ex account",
                 style = MaterialTheme.typography.bodyLarge,
@@ -93,12 +83,15 @@ fun SignInScreen(
 
             Spacer(modifier = Modifier.height(48.dp))
 
-            // Email Field
+            // ── Email ───────────────────────────────────────────────────────
             OutlinedTextField(
                 value = email,
-                onValueChange = { email = it },
-                label = { Text("Email") },
-                placeholder = { Text("student@ictu.edu.cm") },
+                onValueChange = {
+                    email = it
+                    viewModel.clearError()      // clear error as user types
+                },
+                label = { Text("ICTU Email") },
+                placeholder = { Text("student@ictuniversity.edu.cm") },
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Email,
                     imeAction = ImeAction.Next
@@ -108,92 +101,88 @@ fun SignInScreen(
                 ),
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                isError = authState is AuthState.Error,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Purple40,
-                    unfocusedBorderColor = PurpleGrey80,
-                    focusedLabelColor = Purple40,
-                    cursorColor = Purple40
-                )
+                isError = uiState.errorMessage != null
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Password Field
+            // ── Password ────────────────────────────────────────────────────
             OutlinedTextField(
                 value = password,
-                onValueChange = { password = it },
+                onValueChange = {
+                    password = it
+                    viewModel.clearError()
+                },
                 label = { Text("Password") },
-                placeholder = { Text("Enter your password") },
-                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                visualTransformation = if (passwordVisible)
+                    VisualTransformation.None else PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Password,
                     imeAction = ImeAction.Done
                 ),
                 keyboardActions = KeyboardActions(
                     onDone = {
+                        Log.d(TAG, "Keyboard done pressed on SignIn")
                         focusManager.clearFocus()
-                        viewModel.signIn(email, password)
+                        viewModel.signIn(email, password) {
+                            Log.d(TAG, "SignIn success callback reached, navigating to home")
+                            navController.navigate(Screen.Home.route) {
+                                popUpTo(Screen.Onboarding.route) { inclusive = true }
+                            }
+                        }
                     }
                 ),
                 trailingIcon = {
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
                         Icon(
                             painter = painterResource(
-                                id = if (passwordVisible) R.drawable.eye else R.drawable.visibility_off
+                                id = if (passwordVisible) R.drawable.eye
+                                else R.drawable.visibility_off
                             ),
-                            contentDescription = if (passwordVisible) "Hide password" else "Show password"
+                            contentDescription = null
                         )
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                isError = authState is AuthState.Error,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Purple40,
-                    unfocusedBorderColor = PurpleGrey80,
-                    focusedLabelColor = Purple40,
-                    cursorColor = Purple40
-                )
+                isError = uiState.errorMessage != null
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Error Message
-            if (authState is AuthState.Error) {
+            // ── Error from ViewModel ────────────────────────────────────────
+            uiState.errorMessage?.let { error ->
+                Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = (authState as AuthState.Error).message,
-                    color = ErrorRed,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Start
+                    text = error,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(28.dp))
 
-            // Sign In Button
+            // ── Sign In Button ──────────────────────────────────────────────
             Button(
                 onClick = {
+                    Log.d(TAG, "Sign In button clicked")
                     focusManager.clearFocus()
-                    viewModel.signIn(email, password)
+                    viewModel.signIn(email, password) {
+                        Log.d(TAG, "SignIn success callback reached, navigating to home")
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.Onboarding.route) { inclusive = true }
+                        }
+                    }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
-                enabled = email.isNotBlank() && password.isNotBlank() && authState !is AuthState.Loading,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Purple40,
-                    contentColor = NeutralWhite,
-                    disabledContainerColor = PurpleGrey80,
-                    disabledContentColor = NeutralWhite
-                ),
+                enabled = email.isNotBlank() && password.isNotBlank() && !uiState.isLoading,
                 shape = MaterialTheme.shapes.large
             ) {
-                if (authState is AuthState.Loading) {
+                if (uiState.isLoading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(24.dp),
-                        color = NeutralWhite,
+                        color = MaterialTheme.colorScheme.onPrimary,
                         strokeWidth = 2.dp
                     )
                 } else {
@@ -206,9 +195,7 @@ fun SignInScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Don't have account link
             Row(
-                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -217,15 +204,11 @@ fun SignInScreen(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                TextButton(
-                    onClick = {
-                        navController.navigate(Screen.CheckStatus.route)
-                    }
-                ) {
+                TextButton(onClick = { navController.navigate(Screen.CheckStatus.route) }) {
                     Text(
                         text = "Sign Up",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Purple40
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
             }

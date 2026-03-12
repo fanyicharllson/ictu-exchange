@@ -3,8 +3,8 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.googleDevtoolsKsp)
-    // alias(libs.plugins.googleServices)
-
+    alias(libs.plugins.googleServices)
+    alias(libs.plugins.daggerHiltAndroid)
 }
 
 android {
@@ -81,6 +81,11 @@ dependencies {
 
     // Coil (To display the Cloudinary URLs in your UI)
     implementation(libs.coil.compose)
+    // Hilt Core
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.compiler) // Use ksp instead of kapt for better performance
+    // Hilt + Compose (Required for hiltViewModel())
+    implementation(libs.androidx.hilt.navigation.compose)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

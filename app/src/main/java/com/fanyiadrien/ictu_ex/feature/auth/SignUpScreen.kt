@@ -1,5 +1,6 @@
 package com.fanyiadrien.ictu_ex.feature.auth
 
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
@@ -19,62 +20,54 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.fanyiadrien.ictu_ex.R
 import com.fanyiadrien.ictu_ex.core.navigation.Screen
-import com.fanyiadrien.ictu_ex.ui.theme.*
+import com.fanyiadrien.ictu_ex.ui.theme.IctuExTheme
 
-/**
- * Sign Up Screen for ICTU-Ex
- *
- * Professional registration screen with email/password signup and user type selection.
- * Uses the defined color palette and follows Material3 design.
- */
+private const val TAG = "ICTU_SignUp"
+
 @Composable
 fun SignUpScreen(
     navController: NavController,
     userType: String,
-    viewModel: AuthViewModel = viewModel()
+    viewModel: AuthViewModel = hiltViewModel()   // ← hiltViewModel(), not viewModel()
 ) {
-    val authState by viewModel.authState.collectAsState()
+    Log.d(TAG, "SignUpScreen composed with userType=$userType")
+    // ── Our uiState, not authState ──────────────────────────────────────────
+    val uiState = viewModel.uiState
     val focusManager = LocalFocusManager.current
 
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    var email           by remember { mutableStateOf("") }
+    var displayName     by remember { mutableStateOf("") }
+    var studentId       by remember { mutableStateOf("") }
+    var password        by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
-    var passwordVisible by remember { mutableStateOf(false) }
+    var passwordVisible        by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
 
-    // Handle auth state changes
-    LaunchedEffect(authState) {
-        when (authState) {
-            is AuthState.Success -> {
-                // Navigate to home and clear back stack
-                navController.navigate(Screen.Home.route) {
-                    popUpTo(Screen.Onboarding.route) { inclusive = true }
-                }
-            }
-            else -> {} // Handle other states in UI
-        }
-    }
+    val passwordMismatch = confirmPassword.isNotEmpty() && password != confirmPassword
 
-    Scaffold { paddingValues ->
+    val userTypeDisplay = if (userType == "SELLER") "Seller" else "Buyer"
+
+    // ── Fix: explicit background so screen is never dark by default ─────────
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background
+    ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.height(48.dp))
 
-            // App Logo/Icon
             Icon(
-                painter = painterResource(id = R.drawable.ic_launcher_foreground), // TODO: Replace with actual logo
+                painter = painterResource(id = R.drawable.ic_launcher_foreground),
                 contentDescription = "ICTU-Ex Logo",
                 modifier = Modifier.size(80.dp),
                 tint = MaterialTheme.colorScheme.primary
@@ -82,7 +75,6 @@ fun SignUpScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Title
             Text(
                 text = "Join ICTU-Exchange",
                 style = MaterialTheme.typography.headlineMedium,
@@ -92,26 +84,61 @@ fun SignUpScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Subtitle with user type
-            val userTypeDisplay = when (userType) {
-                "SELLER" -> "Seller"
-                "BUYER" -> "Buyer"
-                else -> "Student"
+            // User type badge
+            Surface(
+                color = MaterialTheme.colorScheme.primaryContainer,
+                shape = MaterialTheme.shapes.small
+            ) {
+                Text(
+                    text = "Registering as $userTypeDisplay",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                )
             }
-            Text(
-                text = "Create your account as a $userTypeDisplay",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
+
+            Spacer(modifier = Modifier.height(40.dp))
+
+            // ── Full Name ───────────────────────────────────────────────────
+            OutlinedTextField(
+                value = displayName,
+                onValueChange = { displayName = it },
+                label = { Text("Full Name") },
+                placeholder = { Text("Your full name") },
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                keyboardActions = KeyboardActions(
+                    onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                ),
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
             )
 
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // Email Field
+            // ── Student ID ──────────────────────────────────────────────────
+            OutlinedTextField(
+                value = studentId,
+                onValueChange = { studentId = it },
+                label = { Text("Student ID(Matricule Number)") },
+                placeholder = { Text("e.g. ICTU20210011") },
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                keyboardActions = KeyboardActions(
+                    onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                ),
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // ── Email ───────────────────────────────────────────────────────
             OutlinedTextField(
                 value = email,
-                onValueChange = { email = it },
-                label = { Text("Email") },
+                onValueChange = {
+                    email = it
+                    viewModel.clearError()      // clear error as user types
+                },
+                label = { Text("ICTU Email") },
                 placeholder = { Text("student@ictuniversity.edu.cm") },
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Email,
@@ -122,24 +149,18 @@ fun SignUpScreen(
                 ),
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                isError = authState is AuthState.Error,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Purple40,
-                    unfocusedBorderColor = PurpleGrey80,
-                    focusedLabelColor = Purple40,
-                    cursorColor = Purple40
-                )
+                isError = uiState.errorMessage != null
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Password Field
+            // ── Password ────────────────────────────────────────────────────
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
                 label = { Text("Password") },
-                placeholder = { Text("Create a strong password") },
-                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                visualTransformation = if (passwordVisible)
+                    VisualTransformation.None else PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Password,
                     imeAction = ImeAction.Next
@@ -151,117 +172,105 @@ fun SignUpScreen(
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
                         Icon(
                             painter = painterResource(
-                                id = if (passwordVisible) R.drawable.eye else R.drawable.visibility_off
+                                id = if (passwordVisible) R.drawable.eye
+                                else R.drawable.visibility_off
                             ),
-                            contentDescription = if (passwordVisible) "Hide password" else "Show password"
+                            contentDescription = null
                         )
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                isError = authState is AuthState.Error,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Purple40,
-                    unfocusedBorderColor = PurpleGrey80,
-                    focusedLabelColor = Purple40,
-                    cursorColor = Purple40
-                )
+                singleLine = true
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Confirm Password Field
+            // ── Confirm Password ────────────────────────────────────────────
             OutlinedTextField(
                 value = confirmPassword,
                 onValueChange = { confirmPassword = it },
                 label = { Text("Confirm Password") },
-                placeholder = { Text("Re-enter your password") },
-                visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                visualTransformation = if (confirmPasswordVisible)
+                    VisualTransformation.None else PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Password,
                     imeAction = ImeAction.Done
                 ),
                 keyboardActions = KeyboardActions(
-                    onDone = {
-                        focusManager.clearFocus()
-                        if (password == confirmPassword) {
-                            viewModel.signUp(email, password, userType)
-                        }
-                    }
+                    onDone = { focusManager.clearFocus() }
                 ),
                 trailingIcon = {
                     IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
                         Icon(
                             painter = painterResource(
-                                id = if (confirmPasswordVisible) R.drawable.eye else R.drawable.visibility_off
+                                id = if (confirmPasswordVisible) R.drawable.eye
+                                else R.drawable.visibility_off
                             ),
-                            contentDescription = if (confirmPasswordVisible) "Hide password" else "Show password"
+                            contentDescription = null
                         )
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                isError = authState is AuthState.Error || (confirmPassword.isNotEmpty() && password != confirmPassword),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Purple40,
-                    unfocusedBorderColor = PurpleGrey80,
-                    focusedLabelColor = Purple40,
-                    cursorColor = Purple40
-                )
+                isError = passwordMismatch
             )
 
-            // Password mismatch error
-            if (confirmPassword.isNotEmpty() && password != confirmPassword) {
-                Spacer(modifier = Modifier.height(8.dp))
+            // ── Inline errors ───────────────────────────────────────────────
+            if (passwordMismatch) {
+                Spacer(modifier = Modifier.height(6.dp))
                 Text(
                     text = "Passwords do not match",
-                    color = ErrorRed,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Start
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // General Error Message
-            if (authState is AuthState.Error) {
+            // Error from ViewModel (wrong email domain, Firebase errors, etc.)
+            uiState.errorMessage?.let { error ->
+                Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = (authState as AuthState.Error).message,
-                    color = ErrorRed,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Start
+                    text = error,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(28.dp))
 
-            // Sign Up Button
+            // ── Sign Up Button ──────────────────────────────────────────────
+            val formValid = email.isNotBlank() && password.isNotBlank() &&
+                    confirmPassword.isNotBlank() && displayName.isNotBlank() &&
+                    studentId.isNotBlank() && !passwordMismatch && !uiState.isLoading
+
             Button(
                 onClick = {
                     focusManager.clearFocus()
-                    if (password == confirmPassword) {
-                        viewModel.signUp(email, password, userType)
-                    }
+                    viewModel.signUp(
+                        email       = email,
+                        password    = password,
+                        displayName = displayName,
+                        studentId   = studentId,
+                        userType    = userType,
+                        onSuccess   = {
+                            Log.d(TAG, "SignUp success callback reached, navigating to home")
+                            navController.navigate(Screen.Home.route) {
+                                popUpTo(Screen.Onboarding.route) { inclusive = true }
+                            }
+                        }
+                    )
                 },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
-                enabled = email.isNotBlank() && password.isNotBlank() && confirmPassword.isNotBlank() &&
-                         password == confirmPassword && authState !is AuthState.Loading,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Purple40,
-                    contentColor = NeutralWhite,
-                    disabledContainerColor = PurpleGrey80,
-                    disabledContentColor = NeutralWhite
-                ),
+                enabled = formValid,
                 shape = MaterialTheme.shapes.large
             ) {
-                if (authState is AuthState.Loading) {
+                if (uiState.isLoading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(24.dp),
-                        color = NeutralWhite,
+                        color = MaterialTheme.colorScheme.onPrimary,
                         strokeWidth = 2.dp
                     )
                 } else {
@@ -274,9 +283,7 @@ fun SignUpScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Already have account link
             Row(
-                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -285,15 +292,14 @@ fun SignUpScreen(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                TextButton(
-                    onClick = {
-                        navController.navigate(Screen.SignIn.route)
-                    }
-                ) {
+                TextButton(onClick = {
+                    Log.d(TAG, "Sign In link clicked from SignUp")
+                    navController.navigate(Screen.SignIn.route)
+                }) {
                     Text(
                         text = "Sign In",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Purple40
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
             }

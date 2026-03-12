@@ -5,6 +5,7 @@
     <application
         tools:replace="android:fullBackupContent"
         android:allowBackup="true"
+        android:name=".IctuExApp"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"

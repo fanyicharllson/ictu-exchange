@@ -11,8 +11,16 @@ import androidx.navigation.compose.rememberNavController
 import com.fanyiadrien.ictu_ex.core.navigation.NavGraph
 import com.fanyiadrien.ictu_ex.core.navigation.Screen
 import com.fanyiadrien.ictu_ex.ui.theme.IctuExTheme
+import com.google.firebase.auth.FirebaseAuth
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject
+    lateinit var auth: FirebaseAuth // Inject Firebase Auth instance by Hilt
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -26,7 +34,8 @@ class MainActivity : ComponentActivity() {
                 // (check SharedPreferences or Firebase auth state here later)
                 NavGraph(
                     navController = navController,
-                    startDestination = Screen.Onboarding.route
+                    startDestination = Screen.Onboarding.route,
+                    auth = auth
                 )
 
             }
