@@ -2,6 +2,26 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Network access for Firebase/Auth/Firestore/Cloudinary -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- Camera access for QR scanning and camera-based features -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <!-- Required for Android 10 (API 29) and above -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+
+    <!-- Required for Android 9 (API 28) and below -->
+    <uses-permission
+        android:name="android.permission.USE_FINGERPRINT"
+        android:maxSdkVersion="28" />
+
+    <!-- Mark camera as optional so app can still install on devices without camera -->
+    <uses-feature
+        android:name="android.hardware.camera.any"
+        android:required="false" />
+
     <application
         tools:replace="android:fullBackupContent"
         android:allowBackup="true"

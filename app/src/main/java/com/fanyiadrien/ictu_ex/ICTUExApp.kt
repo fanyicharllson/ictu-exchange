@@ -24,13 +24,11 @@ class IctuExApp : Application() {
      * Initialise Cloudinary once at app startup.
      * Replace the values below with your actual Cloudinary credentials
      * from your Cloudinary dashboard → Settings → API Keys.
-     *
-     * ⚠️ In production: move these to a local.properties file
-     *    and never commit your api_secret to Git.
+
      */
     private fun initCloudinary() {
         val config = mapOf(
-            "cloud_name" to "YOUR_CLOUD_NAME",   // e.g. "ictu-ex"
+            "cloud_name" to "YOUR_CLOUD_NAME",
             "api_key"    to "YOUR_API_KEY",
             "api_secret" to "YOUR_API_SECRET"
         )

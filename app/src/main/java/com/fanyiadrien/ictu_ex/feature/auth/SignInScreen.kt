@@ -11,6 +11,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
@@ -20,10 +21,12 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.fragment.app.FragmentActivity
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.fanyiadrien.ictu_ex.R
+import com.fanyiadrien.ictu_ex.core.biometric.BiometricHelper
 import com.fanyiadrien.ictu_ex.core.navigation.Screen
 import com.fanyiadrien.ictu_ex.ui.theme.IctuExTheme
 
@@ -37,9 +40,11 @@ fun SignInScreen(
     Log.d(TAG, "SignInScreen composed")
     val uiState = viewModel.uiState              // ← our uiState
     val focusManager = LocalFocusManager.current
+    val context = LocalContext.current
 
-    var email          by remember { mutableStateOf("") }
-    var password       by remember { mutableStateOf("") }
+
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
 
     // ── Fix: explicit background ────────────────────────────────────────────
@@ -122,7 +127,6 @@ fun SignInScreen(
                 ),
                 keyboardActions = KeyboardActions(
                     onDone = {
-                        Log.d(TAG, "Keyboard done pressed on SignIn")
                         focusManager.clearFocus()
                         viewModel.signIn(email, password) {
                             Log.d(TAG, "SignIn success callback reached, navigating to home")
@@ -167,9 +171,24 @@ fun SignInScreen(
                     Log.d(TAG, "Sign In button clicked")
                     focusManager.clearFocus()
                     viewModel.signIn(email, password) {
-                        Log.d(TAG, "SignIn success callback reached, navigating to home")
-                        navController.navigate(Screen.Home.route) {
-                            popUpTo(Screen.Onboarding.route) { inclusive = true }
+                        // After Firebase confirms login → trigger biometric
+                        val activity = context as FragmentActivity
+                        if (BiometricHelper.isAvailable(activity)) {
+                            BiometricHelper.authenticate(
+                                activity = activity,
+                                onSuccess = {
+                                    navController.navigate(Screen.Home.route) {
+                                        popUpTo(Screen.Onboarding.route) { inclusive = true }
+                                    }
+                                },
+                                onFailure = { /* prompt stays open, user retries */ },
+                                onError = { msg -> viewModel.uiState.copy(errorMessage = msg) }
+                            )
+                        } else {
+                            // Device has no biometric — go straight to Home
+                            navController.navigate(Screen.Home.route) {
+                                popUpTo(Screen.Onboarding.route) { inclusive = true }
+                            }
                         }
                     }
                 },

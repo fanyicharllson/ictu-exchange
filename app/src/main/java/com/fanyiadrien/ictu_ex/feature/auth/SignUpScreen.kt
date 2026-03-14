@@ -11,6 +11,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
@@ -20,10 +21,12 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.fragment.app.FragmentActivity
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.fanyiadrien.ictu_ex.R
+import com.fanyiadrien.ictu_ex.core.biometric.BiometricHelper
 import com.fanyiadrien.ictu_ex.core.navigation.Screen
 import com.fanyiadrien.ictu_ex.ui.theme.IctuExTheme
 
@@ -39,13 +42,15 @@ fun SignUpScreen(
     // ── Our uiState, not authState ──────────────────────────────────────────
     val uiState = viewModel.uiState
     val focusManager = LocalFocusManager.current
+    val context = LocalContext.current
 
-    var email           by remember { mutableStateOf("") }
-    var displayName     by remember { mutableStateOf("") }
-    var studentId       by remember { mutableStateOf("") }
-    var password        by remember { mutableStateOf("") }
+
+    var email by remember { mutableStateOf("") }
+    var displayName by remember { mutableStateOf("") }
+    var studentId by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
-    var passwordVisible        by remember { mutableStateOf(false) }
+    var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
 
     val passwordMismatch = confirmPassword.isNotEmpty() && password != confirmPassword
@@ -248,15 +253,29 @@ fun SignUpScreen(
                 onClick = {
                     focusManager.clearFocus()
                     viewModel.signUp(
-                        email       = email,
-                        password    = password,
+                        email = email,
+                        password = password,
                         displayName = displayName,
-                        studentId   = studentId,
-                        userType    = userType,
-                        onSuccess   = {
-                            Log.d(TAG, "SignUp success callback reached, navigating to home")
-                            navController.navigate(Screen.Home.route) {
-                                popUpTo(Screen.Onboarding.route) { inclusive = true }
+                        studentId = studentId,
+                        userType = userType,
+                        onSuccess = {
+                            val activity = context as FragmentActivity
+                            if (BiometricHelper.isAvailable(activity)) {
+                                BiometricHelper.authenticate(
+                                    activity = activity,
+                                    onSuccess = {
+                                        navController.navigate(Screen.Home.route) {
+                                            popUpTo(Screen.Onboarding.route) { inclusive = true }
+                                        }
+                                    },
+                                    onFailure = { /* prompt stays open, user retries */ },
+                                    onError = { msg -> viewModel.uiState.copy(errorMessage = msg) }
+                                )
+                            } else {
+                                // Device has no biometric — go straight to Home
+                                navController.navigate(Screen.Home.route) {
+                                    popUpTo(Screen.Onboarding.route) { inclusive = true }
+                                }
                             }
                         }
                     )
