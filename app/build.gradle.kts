@@ -87,6 +87,7 @@ dependencies {
     ksp(libs.hilt.compiler) // Use ksp instead of kapt for better performance
     // Hilt + Compose (Required for hiltViewModel())
     implementation(libs.androidx.hilt.navigation.compose)
+    implementation(libs.androidx.material.icons.extended)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

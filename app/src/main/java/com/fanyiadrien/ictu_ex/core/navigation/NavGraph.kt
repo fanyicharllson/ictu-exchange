@@ -69,7 +69,7 @@ fun NavGraph(
         // ── Main App ──────────────────────────────────────────────────────────
         composable(route = Screen.Home.route) {
             Log.d(TAG, "Entering route: ${Screen.Home.route}")
-            HomeScreen(auth = auth)
+            HomeScreen(navController = navController)
         }
 
         composable(

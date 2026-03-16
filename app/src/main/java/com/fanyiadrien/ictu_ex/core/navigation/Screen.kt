@@ -45,6 +45,10 @@ sealed class Screen(val route: String) {
         fun createRoute(listingId: String) = "item_detail/$listingId"
     }
 
+    // ── Main App ──────────────────────────────────────────────────────────────
+    object Search   : Screen("search")
+    object Wishlist : Screen("wishlist")
+
     /** Post a new item for sale/swap. Seller-only screen. */
     object PostItem : Screen("post_item")
 

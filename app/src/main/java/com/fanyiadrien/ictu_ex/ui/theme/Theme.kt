@@ -8,6 +8,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
@@ -25,7 +26,7 @@ private val LightColors = lightColorScheme(
     tertiary    = Teal40,
     onTertiary  = NeutralWhite,
 
-    background   = NeutralLight,
+    background   = NeutralWhite, // Changed to pure white for status bar matching
     onBackground = NeutralDark,
     surface      = NeutralWhite,
     onSurface    = NeutralDark,
@@ -68,16 +69,15 @@ fun IctuExTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-
-            // ✅ Modern way — no deprecated statusBarColor
-            // Makes the status bar fully transparent, letting the app
-            // background show through. Icons adjust to light/dark automatically.
-            WindowCompat.setDecorFitsSystemWindows(window, false)
-            WindowCompat.getInsetsController(window, view).apply {
-                // Light mode → dark icons on status bar (readable on light bg)
-                // Dark mode  → light icons on status bar (readable on dark bg)
-                isAppearanceLightStatusBars = !darkTheme
-            }
+            
+            // Set status bar color to match background
+            window.statusBarColor = colorScheme.background.toArgb()
+            
+            val insetsController = WindowCompat.getInsetsController(window, view)
+            
+            // Light mode: status bar background white, icons dark
+            // Dark mode: status bar background dark, icons white
+            insetsController.isAppearanceLightStatusBars = !darkTheme
         }
     }
 
