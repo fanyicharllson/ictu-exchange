@@ -1,5 +1,6 @@
 package com.fanyiadrien.ictu_ex.feature.home
 
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -15,6 +16,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+private const val TAG = "HomeViewModel"
+
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val listingRepository: ListingRepository,
@@ -25,45 +28,76 @@ class HomeViewModel @Inject constructor(
         private set
 
     init {
+        Log.d(TAG, "🚀 HomeViewModel initialized")
         loadCurrentUser()
         fetchListings()
     }
 
     private fun loadCurrentUser() {
+        Log.d(TAG, "📥 Loading current user...")
         viewModelScope.launch {
             when (val result = userRepository.getCurrentUser()) {
-                is AppResult.Success -> uiState = uiState.copy(currentUser = result.data)
-                else -> Unit
+                is AppResult.Success -> {
+                    Log.d(TAG, "✅ Current user loaded: ${result.data.displayName}")
+                    uiState = uiState.copy(currentUser = result.data)
+                }
+                is AppResult.Error -> {
+                    Log.e(TAG, "❌ Failed to load current user: ${result.message}")
+                }
+                else -> {
+                    Log.w(TAG, "⚠️ Unexpected result type loading user")
+                }
             }
         }
     }
 
     fun fetchListings() {
+        Log.d(TAG, "📡 fetchListings() called - requesting data from repository...")
         viewModelScope.launch {
             uiState = uiState.copy(isLoading = true, errorMessage = null)
+            Log.d(TAG, "⏳ Set isLoading = true, errorMessage = null")
+            
             when (val result = listingRepository.getAllListings()) {
                 is AppResult.Success -> {
+                    Log.d(TAG, "✅ Successfully fetched ${result.data.size} listings from Firestore")
+                    if (result.data.isEmpty()) {
+                        Log.w(TAG, "⚠️ No listings returned from Firestore (empty list)")
+                    } else {
+                        Log.d(TAG, "📋 First listing: ${result.data.first().title}")
+                    }
+                    
+                    val filtered = applyFilter(
+                        result.data,
+                        uiState.selectedCategory,
+                        uiState.searchQuery
+                    )
+                    Log.d(TAG, "🔍 After filtering: ${filtered.size} listings")
+                    
                     uiState = uiState.copy(
                         isLoading = false,
                         allListings = result.data,
-                        filteredListings = applyFilter(
-                            result.data,
-                            uiState.selectedCategory,
-                            uiState.searchQuery
-                        )
+                        filteredListings = filtered
                     )
+                    Log.d(TAG, "✅ UI state updated with listings")
                 }
 
                 is AppResult.Error -> {
-                    uiState = uiState.copy(isLoading = false, errorMessage = result.message)
+                    Log.e(TAG, "❌ Error fetching listings: ${result.message}")
+                    uiState = uiState.copy(
+                        isLoading = false, 
+                        errorMessage = result.message
+                    )
                 }
 
-                else -> Unit
+                else -> {
+                    Log.w(TAG, "⚠️ Unexpected result type: ${result::class.simpleName}")
+                }
             }
         }
     }
 
     fun onCategorySelected(category: ListingCategory) {
+        Log.d(TAG, "🏷️ Category selected: ${category.displayName}")
         uiState = uiState.copy(
             selectedCategory = category,
             filteredListings = applyFilter(uiState.allListings, category, uiState.searchQuery)
@@ -71,6 +105,7 @@ class HomeViewModel @Inject constructor(
     }
 
     fun onSearchQueryChanged(query: String) {
+        Log.d(TAG, "🔍 Search query changed: '$query'")
         uiState = uiState.copy(
             searchQuery = query,
             filteredListings = applyFilter(uiState.allListings, uiState.selectedCategory, query)

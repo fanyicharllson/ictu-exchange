@@ -1,18 +1,19 @@
 package com.fanyiadrien.ictu_ex
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.fragment.app.FragmentActivity
 import androidx.navigation.compose.rememberNavController
 import com.fanyiadrien.ictu_ex.core.navigation.NavGraph
 import com.fanyiadrien.ictu_ex.core.navigation.Screen
 import com.fanyiadrien.ictu_ex.core.sensors.LightSensorManager
 import com.fanyiadrien.ictu_ex.ui.theme.IctuExTheme
+import com.fanyiadrien.ictu_ex.ui.theme.ThemeMode
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
-import androidx.compose.runtime.*
-import androidx.fragment.app.FragmentActivity
 import com.google.firebase.auth.FirebaseAuth
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : FragmentActivity() {
@@ -29,14 +30,23 @@ class MainActivity : FragmentActivity() {
 
         setContent {
             // Observes the sensor flow — updates theme instantly when lux changes
-            val isDark by lightSensorManager.isDark.collectAsState()
+            val sensorIsDark by lightSensorManager.isDark.collectAsState()
+            var themeMode by rememberSaveable { mutableStateOf(ThemeMode.AUTO) }
+
+            val isDark = when (themeMode) {
+                ThemeMode.AUTO -> sensorIsDark
+                ThemeMode.LIGHT -> false
+                ThemeMode.DARK -> true
+            }
 
             IctuExTheme(darkTheme = isDark) {
                 val navController = rememberNavController()
                 NavGraph(
                     navController = navController,
                     startDestination = Screen.Onboarding.route,
-                    auth = auth
+                    auth = auth,
+                    themeMode = themeMode,
+                    onThemeModeChange = { themeMode = it }
                 )
             }
         }

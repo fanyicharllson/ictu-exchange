@@ -1,5 +1,6 @@
 package com.fanyiadrien.ictu_ex.data.repository
 
+import android.util.Log
 import com.fanyiadrien.ictu_ex.data.model.Listing
 import com.fanyiadrien.ictu_ex.utils.AppError
 import com.fanyiadrien.ictu_ex.utils.AppResult
@@ -9,6 +10,8 @@ import com.google.firebase.firestore.Query
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 import javax.inject.Singleton
+
+private const val TAG = "ListingRepository"
 
 @Singleton
 class ListingRepository @Inject constructor(
@@ -23,6 +26,7 @@ class ListingRepository @Inject constructor(
      * HomeViewModel calls this on load and on pull-to-refresh.
      */
     suspend fun getAllListings(): AppResult<List<Listing>> {
+        Log.d(TAG, "📡 getAllListings() called")
         return try {
             val snapshot = listingsCollection
                 .whereEqualTo("available", true)
@@ -30,15 +34,46 @@ class ListingRepository @Inject constructor(
                 .get()
                 .await()
 
-            val listings = snapshot.documents.mapNotNull { doc ->
-                doc.toObject(Listing::class.java)?.copy(id = doc.id)
+            Log.d(TAG, "✅ Firestore query successful, got ${snapshot.documents.size} documents")
+            
+            if (snapshot.documents.isEmpty()) {
+                Log.w(TAG, "⚠️ Firestore returned empty documents list (no listings with available=true)")
+            } else {
+                snapshot.documents.forEachIndexed { index, doc ->
+                    Log.d(TAG, "📋 Doc #${index + 1}: id=${doc.id}, title=${doc.get("title") ?: "N/A"}, available=${doc.get("available") ?: "N/A"}")
+                }
             }
 
+            val listings = snapshot.documents.mapNotNull { doc ->
+                try {
+                    val listing = doc.toObject(Listing::class.java)?.copy(id = doc.id)
+                    if (listing != null) {
+                        Log.d(TAG, "✅ Mapped document to Listing: ${listing.title}")
+                    } else {
+                        Log.w(TAG, "⚠️ Failed to map document ${doc.id} to Listing object")
+                    }
+                    listing
+                } catch (e: Exception) {
+                    Log.e(TAG, "❌ Error mapping document ${doc.id} to Listing: ${e.message}", e)
+                    null
+                }
+            }
+
+            Log.d(TAG, "✅ Successfully parsed ${listings.size} listings from ${snapshot.documents.size} documents")
             AppResult.Success(listings)
         } catch (e: Exception) {
+            Log.e(TAG, "❌ Exception in getAllListings(): ${e.javaClass.simpleName}")
+            Log.e(TAG, "❌ Error message: ${e.message}")
+            Log.e(TAG, "❌ Full stacktrace:", e)
+            
             if (e.message?.contains("network", ignoreCase = true) == true) {
+                Log.e(TAG, "🌐 Classified as NETWORK_ERROR")
                 AppResult.Error(AppError.NETWORK_ERROR, e)
+            } else if (e.message?.contains("permission", ignoreCase = true) == true) {
+                Log.e(TAG, "🔐 Detected PERMISSION error - likely Firestore security rules issue")
+                AppResult.Error(AppError.FETCH_FAILED, e)
             } else {
+                Log.e(TAG, "❌ Classified as FETCH_FAILED")
                 AppResult.Error(AppError.FETCH_FAILED, e)
             }
         }

@@ -30,13 +30,22 @@ import com.fanyiadrien.ictu_ex.core.navigation.Screen
 import com.fanyiadrien.ictu_ex.core.ui.components.IctuBottomNav
 import com.fanyiadrien.ictu_ex.data.model.Listing
 import com.fanyiadrien.ictu_ex.data.model.ListingCategory
+import com.fanyiadrien.ictu_ex.ui.theme.ThemeMode
 
 @Composable
 fun HomeScreen(
     navController: NavController,
+    themeMode: ThemeMode,
+    onThemeModeChange: (ThemeMode) -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState = viewModel.uiState
+
+    // Refetch listings when screen is visited/resumed to ensure fresh data from Firestore
+    // This triggers on every recomposition to guarantee data is always up-to-date
+    LaunchedEffect(navController.currentBackStackEntry) {
+        viewModel.fetchListings()
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -61,6 +70,8 @@ fun HomeScreen(
             item {
                 HomeTopBar(
                     userName = uiState.currentUser?.displayName ?: "Student",
+                    themeMode = themeMode,
+                    onThemeModeToggle = onThemeModeChange,
                     onNotificationClick = { /* TODO: notifications screen */ }
                 )
             }
@@ -169,6 +180,8 @@ fun HomeScreen(
 @Composable
 private fun HomeTopBar(
     userName: String,
+    themeMode: ThemeMode,
+    onThemeModeToggle: (ThemeMode) -> Unit,
     onNotificationClick: () -> Unit
 ) {
     Row(
@@ -192,17 +205,48 @@ private fun HomeTopBar(
             )
         }
 
-        IconButton(
-            onClick = onNotificationClick,
-            modifier = Modifier
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceVariant)
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = Icons.Rounded.Notifications,
-                contentDescription = "Notifications",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            val themeIcon = when (themeMode) {
+                ThemeMode.AUTO -> Icons.Rounded.BrightnessAuto
+                ThemeMode.LIGHT -> Icons.Rounded.LightMode
+                ThemeMode.DARK -> Icons.Rounded.DarkMode
+            }
+
+            IconButton(
+                onClick = {
+                    val nextMode = when (themeMode) {
+                        ThemeMode.AUTO -> ThemeMode.LIGHT
+                        ThemeMode.LIGHT -> ThemeMode.DARK
+                        ThemeMode.DARK -> ThemeMode.AUTO
+                    }
+                    onThemeModeToggle(nextMode)
+                },
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+            ) {
+                Icon(
+                    imageVector = themeIcon,
+                    contentDescription = "Toggle theme mode",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            IconButton(
+                onClick = onNotificationClick,
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Notifications,
+                    contentDescription = "Notifications",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }

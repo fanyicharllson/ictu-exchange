@@ -57,4 +57,7 @@ sealed class Screen(val route: String) {
 
     /* Settings Screen */
     object Settings: Screen("settings")
+
+      /* Camera screen*/
+    object Camera: Screen("camera")
 }
