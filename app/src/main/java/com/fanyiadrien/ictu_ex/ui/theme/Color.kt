@@ -22,8 +22,9 @@ val Teal80  = Color(0xFF80CBC4)
 
 // --- Neutral Surfaces ---
 val NeutralWhite  = Color(0xFFFFFFFF)
-val NeutralLight  = Color(0xFFF6F0FF)  // Light mode background
+val NeutralLight  = Color(0xFFF6F0FF)  // Light mode background tint
 val NeutralDark   = Color(0xFF1C1B1F)  // Dark mode background
+val DarkSurface   = Color(0xFF2B2930)  // Dark mode card / surface
 val NeutralGrey   = Color(0xFF79747E)
 
 // --- Semantic ---
