@@ -26,7 +26,7 @@ private val LightColors = lightColorScheme(
     tertiary    = Teal40,
     onTertiary  = NeutralWhite,
 
-    background   = NeutralWhite, // Changed to pure white for status bar matching
+    background   = NeutralWhite,
     onBackground = NeutralDark,
     surface      = NeutralWhite,
     onSurface    = NeutralDark,
@@ -51,7 +51,7 @@ private val DarkColors = darkColorScheme(
 
     background   = NeutralDark,
     onBackground = NeutralLight,
-    surface      = Color(0xFF2B2930),
+    surface      = DarkSurface,
     onSurface    = NeutralLight,
 
     error   = Color(0xFFF2B8B5),

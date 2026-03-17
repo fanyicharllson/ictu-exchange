@@ -1,42 +1,37 @@
 package com.fanyiadrien.ictu_ex.feature.auth
 
 import android.util.Log
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import com.fanyiadrien.ictu_ex.R
-import com.fanyiadrien.ictu_ex.core.biometric.BiometricHelper
 import com.fanyiadrien.ictu_ex.core.navigation.Screen
-import com.fanyiadrien.ictu_ex.ui.theme.IctuExTheme
 
 private const val TAG = "ICTU_SignUp"
 
@@ -46,11 +41,30 @@ fun SignUpScreen(
     userType: String,
     viewModel: AuthViewModel = hiltViewModel()
 ) {
-    Log.d(TAG, "SignUpScreen composed with userType=$userType")
+    Log.d(TAG, "SignUpScreen composed")
     val uiState = viewModel.uiState
     val focusManager = LocalFocusManager.current
-    val context = LocalContext.current
+    val isDark = isSystemInDarkTheme()
 
+    // ── Theme tokens ──────────────────────────────────────────────────────────
+    val cardBg          = if (isDark) Color(0xFF2B2930) else Color.White
+    val cardContent     = if (isDark) Color(0xFFEADDFF) else Color(0xFF1C1B1F)
+    val fieldText       = if (isDark) Color(0xFFEADDFF) else Color(0xFF1C1B1F)
+    val fieldBorder     = if (isDark) Color(0xFFBB86FC) else Color.Black
+    val fieldBorderDim  = if (isDark) Color(0xFF625B71) else Color(0xFF79747E)
+    val fieldLabel      = if (isDark) Color(0xFFCCC2DC) else Color(0xFF49454F)
+    val fieldContainer  = if (isDark) Color(0xFF1C1B1F) else Color(0xFFF6F0FF)
+    val fieldIcon       = if (isDark) Color(0xFFBB86FC) else Color(0xFF6200EE)
+    val errorColor      = if (isDark) Color(0xFFF2B8B5) else Color(0xFFB3261E)
+    val dividerColor    = if (isDark) Color(0xFF49454F) else Color(0xFFCAC4D0)
+    val subtitleColor   = if (isDark) Color(0xFFCCC2DC) else Color(0xFF49454F)
+    val badgeBg         = if (isDark) Color(0xFF4A00A0) else Color(0xFFE9DDFF)
+    val badgeText       = if (isDark) Color(0xFFEADDFF) else Color(0xFF4A00A0)
+    val bottomTextColor = MaterialTheme.colorScheme.onBackground
+
+    val googleBg     = if (isDark) Color(0xFF2B2930) else Color.White
+    val googleBorder = if (isDark) Color(0xFFBB86FC) else Color.Black
+    val googleText   = if (isDark) Color(0xFFEADDFF) else Color(0xFF1C1B1F)
 
     var email by remember { mutableStateOf("") }
     var displayName by remember { mutableStateOf("") }
@@ -61,19 +75,24 @@ fun SignUpScreen(
     var confirmPasswordVisible by remember { mutableStateOf(false) }
 
     val passwordMismatch = confirmPassword.isNotEmpty() && password != confirmPassword
-    val userTypeDisplay = if (userType == "SELLER") "Seller" else "Buyer"
+    val userTypeDisplay  = if (userType == "SELLER") "Seller" else "Buyer"
 
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background
-    ) { paddingValues ->
+    Scaffold(containerColor = MaterialTheme.colorScheme.background) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize()) {
+
+            // ── Curved header gradient ─────────────────────────────────────
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .fillMaxHeight(0.4f)
+                    .fillMaxHeight(0.35f)
                     .background(
-                        color = MaterialTheme.colorScheme.primary,
-                        shape = RoundedCornerShape(bottomStart = 64.dp, bottomEnd = 64.dp)
+                        brush = Brush.verticalGradient(
+                            colors = if (isDark)
+                                listOf(Color(0xFF4A00A0), Color(0xFF2B2930))
+                            else
+                                listOf(Color(0xFF6200EE), Color(0xFF9C4DCC))
+                        ),
+                        shape = RoundedCornerShape(bottomStart = 56.dp, bottomEnd = 56.dp)
                     )
             )
 
@@ -85,31 +104,33 @@ fun SignUpScreen(
                     .padding(horizontal = 24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(modifier = Modifier.height(40.dp))
+                Spacer(modifier = Modifier.height(44.dp))
 
+                // ── Logo badge ─────────────────────────────────────────────
                 Surface(
                     modifier = Modifier.size(80.dp),
                     shape = RoundedCornerShape(20.dp),
                     color = Color.White,
-                    shadowElevation = 8.dp
+                    shadowElevation = 12.dp
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             painter = painterResource(id = R.drawable.user),
                             contentDescription = "Logo",
-                            modifier = Modifier.size(50.dp),
-                            tint = MaterialTheme.colorScheme.primary
+                            modifier = Modifier.size(48.dp),
+                            tint = Color(0xFF6200EE)
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
+                // ── Auth card ──────────────────────────────────────────────
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(32.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                    shape = RoundedCornerShape(28.dp),
+                    colors = CardDefaults.cardColors(containerColor = cardBg),
+                    elevation = CardDefaults.cardElevation(defaultElevation = if (isDark) 8.dp else 4.dp)
                 ) {
                     Column(
                         modifier = Modifier
@@ -120,43 +141,55 @@ fun SignUpScreen(
                         Text(
                             text = "Create Account",
                             style = MaterialTheme.typography.headlineSmall.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
+                                fontWeight = FontWeight.Bold
+                            ),
+                            color = cardContent
                         )
-                        
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Role badge
                         Surface(
-                            color = Color.White.copy(alpha = 0.2f),
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.padding(top = 8.dp)
+                            color = badgeBg,
+                            shape = RoundedCornerShape(20.dp)
                         ) {
                             Text(
                                 text = "Registering as $userTypeDisplay",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = Color.White,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                                style = MaterialTheme.typography.labelMedium.copy(
+                                    fontWeight = FontWeight.SemiBold
+                                ),
+                                color = badgeText,
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp)
                             )
                         }
 
                         Spacer(modifier = Modifier.height(24.dp))
 
                         val fieldColors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White,
-                            focusedBorderColor = Color.White,
-                            unfocusedBorderColor = Color.White.copy(alpha = 0.5f),
-                            focusedLabelColor = Color.White,
-                            unfocusedLabelColor = Color.White.copy(alpha = 0.7f),
-                            cursorColor = Color.White
+                            focusedTextColor        = fieldText,
+                            unfocusedTextColor      = fieldText,
+                            focusedBorderColor      = fieldBorder,
+                            unfocusedBorderColor    = fieldBorderDim,
+                            focusedLabelColor       = fieldBorder,
+                            unfocusedLabelColor     = fieldLabel,
+                            cursorColor             = fieldBorder,
+                            focusedContainerColor   = fieldContainer,
+                            unfocusedContainerColor = fieldContainer,
+                            errorBorderColor        = errorColor,
+                            errorLabelColor         = errorColor,
+                            errorLeadingIconColor   = errorColor
                         )
 
                         OutlinedTextField(
                             value = displayName,
                             onValueChange = { displayName = it },
                             label = { Text("Full Name") },
-                            shape = RoundedCornerShape(16.dp),
+                            leadingIcon = { Icon(Icons.Default.Person, null, tint = fieldIcon) },
+                            shape = RoundedCornerShape(14.dp),
                             colors = fieldColors,
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 5.dp),
                             singleLine = true
                         )
 
@@ -164,9 +197,12 @@ fun SignUpScreen(
                             value = studentId,
                             onValueChange = { studentId = it },
                             label = { Text("Student ID") },
-                            shape = RoundedCornerShape(16.dp),
+                            leadingIcon = { Icon(Icons.Default.Badge, null, tint = fieldIcon) },
+                            shape = RoundedCornerShape(14.dp),
                             colors = fieldColors,
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 5.dp),
                             singleLine = true
                         )
 
@@ -174,9 +210,12 @@ fun SignUpScreen(
                             value = email,
                             onValueChange = { email = it; viewModel.clearError() },
                             label = { Text("ICTU Email") },
-                            shape = RoundedCornerShape(16.dp),
+                            leadingIcon = { Icon(Icons.Default.Email, null, tint = fieldIcon) },
+                            shape = RoundedCornerShape(14.dp),
                             colors = fieldColors,
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 5.dp),
                             singleLine = true,
                             isError = uiState.errorMessage != null
                         )
@@ -185,21 +224,24 @@ fun SignUpScreen(
                             value = password,
                             onValueChange = { password = it },
                             label = { Text("Password") },
-                            leadingIcon = { Icon(Icons.Default.Lock, null, tint = Color.White) },
-                            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                            leadingIcon = { Icon(Icons.Default.Lock, null, tint = fieldIcon) },
+                            visualTransformation = if (passwordVisible) VisualTransformation.None
+                                                   else PasswordVisualTransformation(),
                             trailingIcon = {
                                 IconButton(onClick = { passwordVisible = !passwordVisible }) {
                                     Icon(
-                                        imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                        imageVector = if (passwordVisible) Icons.Default.Visibility
+                                                      else Icons.Default.VisibilityOff,
                                         contentDescription = null,
-                                        modifier = Modifier.size(24.dp),
-                                        tint = Color.White
+                                        tint = fieldIcon
                                     )
                                 }
                             },
-                            shape = RoundedCornerShape(16.dp),
+                            shape = RoundedCornerShape(14.dp),
                             colors = fieldColors,
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 5.dp),
                             singleLine = true
                         )
 
@@ -207,27 +249,44 @@ fun SignUpScreen(
                             value = confirmPassword,
                             onValueChange = { confirmPassword = it },
                             label = { Text("Confirm Password") },
-                            leadingIcon = { Icon(Icons.Default.Lock, null, tint = Color.White) },
-                            visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                            leadingIcon = { Icon(Icons.Default.Lock, null, tint = fieldIcon) },
+                            visualTransformation = if (confirmPasswordVisible) VisualTransformation.None
+                                                   else PasswordVisualTransformation(),
                             trailingIcon = {
                                 IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
                                     Icon(
-                                        imageVector = if (confirmPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                        imageVector = if (confirmPasswordVisible) Icons.Default.Visibility
+                                                      else Icons.Default.VisibilityOff,
                                         contentDescription = null,
-                                        modifier = Modifier.size(24.dp),
-                                        tint = Color.White
+                                        tint = fieldIcon
                                     )
                                 }
                             },
-                            shape = RoundedCornerShape(16.dp),
+                            shape = RoundedCornerShape(14.dp),
                             colors = fieldColors,
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 5.dp),
                             singleLine = true,
                             isError = passwordMismatch
                         )
 
                         if (passwordMismatch) {
-                            Text("Passwords do not match", color = Color.Yellow, style = MaterialTheme.typography.bodySmall)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                "Passwords do not match",
+                                color = errorColor,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+
+                        uiState.errorMessage?.let { error ->
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = error,
+                                color = errorColor,
+                                style = MaterialTheme.typography.bodySmall
+                            )
                         }
 
                         Spacer(modifier = Modifier.height(24.dp))
@@ -239,42 +298,105 @@ fun SignUpScreen(
                                     navController.navigate(Screen.Home.route) { popUpTo(0) }
                                 }
                             },
-                            modifier = Modifier.fillMaxWidth().height(56.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = MaterialTheme.colorScheme.primary),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(52.dp),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor   = Color.White,
+                                disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
+                                disabledContentColor   = Color.White.copy(alpha = 0.6f)
+                            ),
                             enabled = email.isNotBlank() && password.isNotBlank() && !uiState.isLoading
                         ) {
-                            if (uiState.isLoading) CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.primary)
-                            else Text("Sign Up", style = MaterialTheme.typography.titleMedium)
+                            if (uiState.isLoading)
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(22.dp),
+                                    color = Color.White,
+                                    strokeWidth = 2.dp
+                                )
+                            else
+                                Text(
+                                    "Create Account",
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                )
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
-                OutlinedButton(
-                    onClick = { /* TODO */ },
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.White)
+                // ── Divider ────────────────────────────────────────────────
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(painterResource(R.drawable.check_stat), null, modifier = Modifier.size(24.dp), tint = Color.Unspecified)
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text("Sign up with Google", color = Color.White)
+                    HorizontalDivider(modifier = Modifier.weight(1f), color = dividerColor)
+                    Text(
+                        text = "  or  ",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = subtitleColor
+                    )
+                    HorizontalDivider(modifier = Modifier.weight(1f), color = dividerColor)
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // ── Google button ──────────────────────────────────────────
+                OutlinedButton(
+                    onClick = { /* TODO: Google Sign-Up */ },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = googleBg,
+                        contentColor   = googleText
+                    ),
+                    border = BorderStroke(1.5.dp, googleBorder)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.google_logo),
+                            contentDescription = "Google",
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = "Continue with Google",
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                fontWeight = FontWeight.Medium
+                            ),
+                            color = googleText
+                        )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(28.dp))
 
+                // ── Bottom link ────────────────────────────────────────────
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Already have an account? ", color = Color.White.copy(alpha = 0.7f))
+                    Text(
+                        "Already have an account?",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = bottomTextColor.copy(alpha = 0.7f)
+                    )
                     TextButton(onClick = { navController.navigate(Screen.SignIn.route) }) {
-                        Text("Sign In", fontWeight = FontWeight.Bold, color = Color.White)
+                        Text(
+                            "Sign In",
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
                     }
                 }
-                Spacer(modifier = Modifier.height(48.dp))
+
+                Spacer(modifier = Modifier.height(40.dp))
             }
         }
     }

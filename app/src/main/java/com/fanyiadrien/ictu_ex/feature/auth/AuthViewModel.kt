@@ -66,7 +66,7 @@ class AuthViewModel @Inject constructor(
         userType: String,
         onSuccess: () -> Unit
     ) {
-        Log.d(TAG, "signUp() called for userType=$userType, email=$email")
+        Log.d(TAG, "signUp() called")
         viewModelScope.launch {
             uiState = uiState.copy(isLoading = true, errorMessage = null)
 
@@ -107,7 +107,7 @@ class AuthViewModel @Inject constructor(
         password: String,
         onSuccess: () -> Unit
     ) {
-        Log.d(TAG, "signIn() called for email=$email")
+        Log.d(TAG, "signIn() called")
         viewModelScope.launch {
             uiState = uiState.copy(isLoading = true, errorMessage = null)
 
