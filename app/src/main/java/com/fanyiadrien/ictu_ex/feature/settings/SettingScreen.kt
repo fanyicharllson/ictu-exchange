@@ -27,8 +27,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.fragment.app.FragmentActivity
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.fanyiadrien.ictu_ex.core.biometric.BiometricHelper
 import com.fanyiadrien.ictu_ex.core.navigation.Screen
 import com.fanyiadrien.ictu_ex.core.ui.components.IctuBottomNav
 import com.fanyiadrien.ictu_ex.ui.theme.*
@@ -42,6 +44,7 @@ fun SettingScreen(
 ) {
     val state   = viewModel.uiState
     val context = LocalContext.current
+    val activity = context as? FragmentActivity
     val isDark  = isSystemInDarkTheme()
 
     // Sync external themeMode into ViewModel on first composition
@@ -50,7 +53,7 @@ fun SettingScreen(
     // Compute cache size once on entry
     LaunchedEffect(Unit) { viewModel.computeCacheSize(context) }
 
-    // Delete-account confirmation dialog
+    // Dialog states
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showSwitchRoleDialog by remember { mutableStateOf(false) }
 
@@ -211,15 +214,32 @@ fun SettingScreen(
         )
     }
 
-    // ── Switch role confirmation ───────────────────────────────────────────
+    // ── Switch role confirmation (Strict Biometric) ────────────────────────
     if (showSwitchRoleDialog) {
         val targetType = if (state.currentUserType == "SELLER") "BUYER" else "SELLER"
         SwitchRoleDialog(
             currentType = state.currentUserType,
             targetType  = targetType,
             onConfirm   = {
-                showSwitchRoleDialog = false
-                viewModel.switchUserType()
+                if (activity != null && BiometricHelper.isAvailable(activity)) {
+                    BiometricHelper.authenticate(
+                        activity = activity,
+                        onSuccess = {
+                            // ONLY switch role on success
+                            showSwitchRoleDialog = false
+                            viewModel.switchUserType()
+                        },
+                        onFailure = { /* User can retry the sensor */ },
+                        onError = { error ->
+                            // Close dialog and DO NOT switch role if canceled or errored
+                            showSwitchRoleDialog = false
+                        }
+                    )
+                } else {
+                    // Fallback for hardware absence
+                    showSwitchRoleDialog = false
+                    viewModel.switchUserType()
+                }
             },
             onDismiss   = { showSwitchRoleDialog = false }
         )
@@ -601,7 +621,7 @@ private fun RoleSwitcherCard(
     val scale by animateFloatAsState(
         targetValue   = if (isPressed) 0.97f else 1f,
         animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-        label         = "roleSwitcherScale"
+        label = "roleSwitcherScale"
     )
 
     Card(
@@ -772,7 +792,7 @@ private fun SwitchRoleDialog(
         },
         confirmButton = {
             Button(onClick = onConfirm) {
-                Text("Switch", color = Color.White)
+                Text("Verify & Switch", color = Color.White)
             }
         },
         dismissButton = {
