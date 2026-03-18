@@ -6,11 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.FavoriteBorder
-import androidx.compose.material.icons.rounded.Home
-import androidx.compose.material.icons.rounded.Person
-import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -27,7 +23,7 @@ import com.fanyiadrien.ictu_ex.core.navigation.Screen
  * Reusable floating bottom navigation bar.
  *
  * - Seller sees: Home | Search | [+] | Wishlist | Profile
- * - Buyer sees:  Home | Search |     | Wishlist | Profile  (no + btn)
+ * - Buyer sees:  Home | Search | Settings | Wishlist | Profile
  *
  * Use inside any Scaffold like:
  *   Scaffold(
@@ -35,8 +31,6 @@ import com.fanyiadrien.ictu_ex.core.navigation.Screen
  *           IctuBottomNav(navController = navController, isSeller = isSeller)
  *       }
  *   )
- *
- * Screens that DON'T need it (auth, onboarding) simply don't include it in their Scaffold.
  */
 @Composable
 fun IctuBottomNav(
@@ -91,8 +85,9 @@ fun IctuBottomNav(
                     onClick = { navController.navigate(Screen.Search.route) }
                 )
 
-                // ── Centre + Button (Seller only) ─────────────────────────
+                // ── Centre Button ─────────────────────────────────────────
                 if (isSeller) {
+                    // Prominent [+] button for sellers
                     Box(
                         modifier = Modifier
                             .size(52.dp)
@@ -109,8 +104,13 @@ fun IctuBottomNav(
                         )
                     }
                 } else {
-                    // Buyer — empty space to keep layout balanced
-                    Spacer(modifier = Modifier.size(52.dp))
+                    // Settings tab for buyers to keep the layout balanced
+                    NavItem(
+                        label = "Settings",
+                        selected = currentRoute == Screen.Settings.route,
+                        icon = Icons.Rounded.Settings,
+                        onClick = { navController.navigate(Screen.Settings.route) }
+                    )
                 }
 
                 // ── Wishlist ──────────────────────────────────────────────
@@ -133,7 +133,6 @@ fun IctuBottomNav(
     }
 }
 
-// ── Single nav tab item ───────────────────────────────────────────────────────
 @Composable
 private fun NavItem(
     label: String,
