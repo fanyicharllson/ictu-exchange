@@ -59,7 +59,8 @@ fun ProfileScreen(
     LaunchedEffect(Unit) { visible = true }
 
     val menuItems = listOf(
-        ProfileMenuItemData(Icons.Rounded.Edit,         "Edit Profile",    "Update your info"),
+        ProfileMenuItemData(Icons.Rounded.Edit,         "Edit Profile",    "Update your info",
+            route = Screen.EditProfile.route),
         ProfileMenuItemData(Icons.Rounded.Notifications,"Notifications",   "Manage alerts"),
         ProfileMenuItemData(Icons.Rounded.Language,     "Language",        "English"),
         ProfileMenuItemData(Icons.Rounded.CreditCard,   "My Card",         "Payment methods"),

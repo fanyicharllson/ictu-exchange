@@ -39,6 +39,53 @@ class UserRepository @Inject constructor(
     }
 
     /**
+     * Switches the current user's type between SELLER and BUYER in Firestore.
+     */
+    suspend fun switchUserType(newType: String): AppResult<Unit> {
+        val uid = auth.currentUser?.uid
+            ?: return AppResult.Error(AppError.UNKNOWN_AUTH_ERROR)
+        return try {
+            firestore.collection("users").document(uid)
+                .update("userType", newType)
+                .await()
+            AppResult.Success(Unit)
+        } catch (e: Exception) {
+            AppResult.Error(AppError.SAVE_FAILED, e)
+        }
+    }
+
+    /**
+     * Deletes a user document from Firestore (called before deleting the Auth account).
+     */
+    suspend fun deleteUser(uid: String): AppResult<Unit> {
+        return try {
+            firestore.collection("users").document(uid).delete().await()
+            AppResult.Success(Unit)
+        } catch (e: Exception) {
+            AppResult.Error(AppError.SAVE_FAILED, e)
+        }
+    }
+
+    /**
+     * Updates the current user's display name and profile image URL in Firestore.
+     */
+    suspend fun updateProfile(
+        displayName: String,
+        profileImageUrl: String
+    ): AppResult<Unit> {
+        val uid = auth.currentUser?.uid
+            ?: return AppResult.Error(AppError.UNKNOWN_AUTH_ERROR)
+        return try {
+            val updates = mutableMapOf<String, Any>("displayName" to displayName)
+            if (profileImageUrl.isNotBlank()) updates["profileImageUrl"] = profileImageUrl
+            firestore.collection("users").document(uid).update(updates).await()
+            AppResult.Success(Unit)
+        } catch (e: Exception) {
+            AppResult.Error(AppError.SAVE_FAILED, e)
+        }
+    }
+
+    /**
      * Fetches any user by their UID.
      * Used in ItemDetailScreen to show seller info.
      */
