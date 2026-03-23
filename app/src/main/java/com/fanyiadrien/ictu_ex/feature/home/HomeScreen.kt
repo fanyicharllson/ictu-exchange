@@ -57,9 +57,7 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState = viewModel.uiState
-
     // Refetch listings when screen is visited/resumed to ensure fresh data from Firestore
-    // This triggers on every recomposition to guarantee data is always up-to-date
     LaunchedEffect(navController.currentBackStackEntry) {
         viewModel.fetchListings()
     }
@@ -67,7 +65,6 @@ fun HomeScreen(
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
-            // Floating nav — only shown on main app screens
             IctuBottomNav(
                 navController = navController,
                 isSeller = uiState.isSeller
@@ -177,9 +174,9 @@ fun HomeScreen(
                 ) {
                     rowItems.forEach { listing ->
                         ProductCard(
-                            listing = listing,
+                            listing  = listing,
                             modifier = Modifier.weight(1f),
-                            onClick = {
+                            onClick  = {
                                 navController.navigate(Screen.ItemDetail.createRoute(listing.id))
                             }
                         )
@@ -368,7 +365,7 @@ private fun NewOnCampusRow(
 
 
 
-// ── Main product card (2-column grid) — THICK & RICH ─────────────────────────
+// ── Main product card (2-column grid) ────────────────────────────────────────
 @Composable
 private fun ProductCard(
     listing: Listing,
@@ -378,8 +375,7 @@ private fun ProductCard(
     var isSaved by remember { mutableStateOf(false) }
 
     Card(
-        modifier = modifier
-            .clickable(onClick = onClick),
+        modifier = modifier.clickable(onClick = onClick),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
@@ -403,8 +399,6 @@ private fun ProductCard(
                     error = painterResource(R.drawable.ic_launcher_foreground),
                     placeholder = painterResource(R.drawable.ic_launcher_foreground)
                 )
-
-                // Bottom gradient on image
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -412,19 +406,12 @@ private fun ProductCard(
                         .align(Alignment.BottomCenter)
                         .background(
                             Brush.verticalGradient(
-                                colors = listOf(
-                                    Color.Transparent,
-                                    Color.Black.copy(alpha = 0.35f)
-                                )
+                                colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.35f))
                             )
                         )
                 )
-
-                // Category badge — top left
                 Surface(
-                    modifier = Modifier
-                        .padding(8.dp)
-                        .align(Alignment.TopStart),
+                    modifier = Modifier.padding(8.dp).align(Alignment.TopStart),
                     color = MaterialTheme.colorScheme.primaryContainer,
                     shape = RoundedCornerShape(8.dp)
                 ) {
@@ -436,8 +423,6 @@ private fun ProductCard(
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
                     )
                 }
-
-                // Wishlist heart — top right
                 Box(
                     modifier = Modifier
                         .padding(8.dp)
@@ -449,11 +434,9 @@ private fun ProductCard(
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = if (isSaved) Icons.Rounded.Favorite
-                        else Icons.Rounded.FavoriteBorder,
+                        imageVector = if (isSaved) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
                         contentDescription = "Save",
-                        tint = if (isSaved) Color(0xFFE53935)
-                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                        tint = if (isSaved) Color(0xFFE53935) else MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(16.dp)
                     )
                 }
@@ -464,7 +447,6 @@ private fun ProductCard(
                 modifier = Modifier.padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                // Title
                 Text(
                     text = listing.title,
                     style = MaterialTheme.typography.bodyMedium,
@@ -473,30 +455,22 @@ private fun ProductCard(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
-
-                // ── Star rating row ───────────────────────────────────────
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
                     repeat(5) { index ->
                         Icon(
-                            imageVector = if (index < 4) Icons.Rounded.Star
-                            else Icons.Rounded.StarHalf,
+                            imageVector = if (index < 4) Icons.Rounded.Star else Icons.Rounded.StarHalf,
                             contentDescription = null,
                             tint = Color(0xFFFFC107),
                             modifier = Modifier.size(12.dp)
                         )
                     }
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "4.0",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Text(text = "4.0", style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-
-                // Price + available indicator row
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -508,16 +482,13 @@ private fun ProductCard(
                         fontWeight = FontWeight.ExtraBold,
                         color = MaterialTheme.colorScheme.primary
                     )
-
-                    // Green dot = available
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(3.dp)
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(7.dp)
-                                .clip(CircleShape)
+                                .size(7.dp).clip(CircleShape)
                                 .background(
                                     if (listing.available) Color(0xFF4CAF50)
                                     else MaterialTheme.colorScheme.error
@@ -531,6 +502,8 @@ private fun ProductCard(
                         )
                     }
                 }
+
+
             }
         }
     }

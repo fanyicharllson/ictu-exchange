@@ -16,6 +16,7 @@ import com.fanyiadrien.ictu_ex.feature.detail.ItemDetailScreen
 import com.fanyiadrien.ictu_ex.feature.home.HomeScreen
 import com.fanyiadrien.ictu_ex.feature.onboarding.OnboardingScreen
 import com.fanyiadrien.ictu_ex.feature.post.PostItemScreen
+import com.fanyiadrien.ictu_ex.feature.cart.CartScreen
 import com.fanyiadrien.ictu_ex.feature.profile.EditProfileScreen
 import com.fanyiadrien.ictu_ex.feature.profile.ProfileScreen
 import com.fanyiadrien.ictu_ex.feature.settings.SettingScreen
@@ -132,6 +133,10 @@ fun NavGraph(
                 themeMode         = themeMode,
                 onThemeModeChange = onThemeModeChange
             )
+        }
+
+        composable(route = Screen.Cart.route) {
+            CartScreen(navController = navController)
         }
     }
 }

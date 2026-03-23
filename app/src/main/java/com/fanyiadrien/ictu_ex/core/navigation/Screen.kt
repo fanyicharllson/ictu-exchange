@@ -61,6 +61,9 @@ sealed class Screen(val route: String) {
     /* Settings Screen */
     object Settings: Screen("settings")
 
-      /* Camera screen*/
+    /* Camera screen*/
     object Camera: Screen("camera")
+
+    /** Cart screen — student's selected items before checkout. */
+    object Cart : Screen("cart")
 }

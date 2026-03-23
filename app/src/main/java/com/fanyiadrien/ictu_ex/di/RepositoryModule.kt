@@ -1,5 +1,6 @@
 package com.fanyiadrien.ictu_ex.di
 
+import com.fanyiadrien.ictu_ex.data.repository.CartRepository
 import com.fanyiadrien.ictu_ex.data.repository.ListingRepository
 import com.fanyiadrien.ictu_ex.data.repository.UserRepository
 import com.google.firebase.auth.FirebaseAuth
@@ -13,6 +14,13 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object RepositoryModule {
+
+    @Provides
+    @Singleton
+    fun provideCartRepository(
+        auth: FirebaseAuth,
+        firestore: FirebaseFirestore
+    ): CartRepository = CartRepository(auth, firestore)
 
     @Provides
     @Singleton
