@@ -113,12 +113,12 @@ fun IctuBottomNav(
                     )
                 }
 
-                // ── Wishlist ──────────────────────────────────────────────
+                // ── Cart ──────────────────────────────────────────────────
                 NavItem(
-                    label = "Saved",
-                    selected = currentRoute == Screen.Wishlist.route,
-                    icon = Icons.Rounded.FavoriteBorder,
-                    onClick = { navController.navigate(Screen.Wishlist.route) }
+                    label    = "Cart",
+                    selected = currentRoute == Screen.Cart.route,
+                    icon     = Icons.Rounded.ShoppingCart,
+                    onClick  = { navController.navigate(Screen.Cart.route) }
                 )
 
                 // ── Profile ───────────────────────────────────────────────

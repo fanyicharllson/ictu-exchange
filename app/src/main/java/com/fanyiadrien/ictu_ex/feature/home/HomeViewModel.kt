@@ -137,7 +137,7 @@ data class HomeUiState(
     val allListings: List<Listing> = emptyList(),
     val filteredListings: List<Listing> = emptyList(),
     val selectedCategory: ListingCategory = ListingCategory.ALL,
-    val searchQuery: String = ""
+    val searchQuery: String = "",
 ) {
     /** True only when loading is done AND there are genuinely no listings yet */
     val isEmpty: Boolean get() = !isLoading && allListings.isEmpty()

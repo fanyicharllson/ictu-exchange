@@ -57,6 +57,7 @@ fun ItemDetailScreen(
                 DetailContent(
                     uiState     = uiState,
                     onBack      = { navController.popBackStack() },
+                    onAddToCart = viewModel::addToCart
                 )
             }
         }
@@ -68,6 +69,7 @@ fun ItemDetailScreen(
 private fun DetailContent(
     uiState: ItemDetailUiState,
     onBack: () -> Unit,
+    onAddToCart: () -> Unit
 ) {
     val listing = uiState.listing!!
     var isSaved by remember { mutableStateOf(false) }
@@ -236,8 +238,9 @@ private fun DetailContent(
 
             // ── Action buttons ────────────────────────────────────────────
             ActionButtons(
-                onAddToCart   = { /* TODO: cart feature */ },
-                onChatSeller  = { showContactSheet = true }
+                inCart       = uiState.inCart,
+                onAddToCart  = onAddToCart,
+                onChatSeller = { showContactSheet = true }
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -399,6 +402,7 @@ private fun DetailChip(
 // ── Action buttons ────────────────────────────────────────────────────────────
 @Composable
 private fun ActionButtons(
+    inCart: Boolean,
     onAddToCart: () -> Unit,
     onChatSeller: () -> Unit
 ) {
@@ -406,39 +410,41 @@ private fun ActionButtons(
         modifier              = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // Chat button — outlined
         OutlinedButton(
             onClick  = onChatSeller,
-            modifier = Modifier
-                .weight(1f)
-                .height(54.dp),
+            modifier = Modifier.weight(1f).height(54.dp),
             shape = MaterialTheme.shapes.large,
             border = ButtonDefaults.outlinedButtonBorder
         ) {
-            Icon(
-                Icons.AutoMirrored.Rounded.Chat,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp)
-            )
+            Icon(Icons.AutoMirrored.Rounded.Chat, contentDescription = null, modifier = Modifier.size(18.dp))
             Spacer(modifier = Modifier.width(8.dp))
             Text("Chat Seller", style = MaterialTheme.typography.titleSmall)
         }
 
-        // Add to cart — filled primary
         Button(
             onClick  = onAddToCart,
-            modifier = Modifier
-                .weight(1f)
-                .height(54.dp),
-            shape = MaterialTheme.shapes.large
+            enabled  = !inCart,
+            modifier = Modifier.weight(1f).height(54.dp),
+            shape    = MaterialTheme.shapes.large,
+            colors   = ButtonDefaults.buttonColors(
+                containerColor = if (inCart) MaterialTheme.colorScheme.secondaryContainer
+                                 else MaterialTheme.colorScheme.primary,
+                contentColor   = if (inCart) MaterialTheme.colorScheme.onSecondaryContainer
+                                 else MaterialTheme.colorScheme.onPrimary,
+                disabledContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+                disabledContentColor   = MaterialTheme.colorScheme.onSecondaryContainer
+            )
         ) {
             Icon(
-                Icons.Rounded.AddShoppingCart,
+                imageVector = if (inCart) Icons.Rounded.ShoppingCart else Icons.Rounded.AddShoppingCart,
                 contentDescription = null,
                 modifier = Modifier.size(18.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Add to Cart", style = MaterialTheme.typography.titleSmall)
+            Text(
+                text  = if (inCart) "In Cart" else "Add to Cart",
+                style = MaterialTheme.typography.titleSmall
+            )
         }
     }
 }

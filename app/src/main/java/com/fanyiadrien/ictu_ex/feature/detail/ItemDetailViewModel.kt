@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fanyiadrien.ictu_ex.data.model.Listing
 import com.fanyiadrien.ictu_ex.data.model.User
+import com.fanyiadrien.ictu_ex.data.repository.CartRepository
 import com.fanyiadrien.ictu_ex.data.repository.ListingRepository
 import com.fanyiadrien.ictu_ex.data.repository.UserRepository
 import com.fanyiadrien.ictu_ex.utils.AppResult
@@ -19,6 +20,7 @@ import javax.inject.Inject
 class ItemDetailViewModel @Inject constructor(
     private val listingRepository: ListingRepository,
     private val userRepository: UserRepository,
+    private val cartRepository: CartRepository,
     savedStateHandle: SavedStateHandle         // reads listingId from nav args automatically
 ) : ViewModel() {
 
@@ -31,6 +33,13 @@ class ItemDetailViewModel @Inject constructor(
         loadDetail(listingId)
     }
 
+    fun addToCart() {
+        uiState.listing?.let {
+            cartRepository.addListing(it)
+            uiState = uiState.copy(inCart = true)
+        }
+    }
+
     private fun loadDetail(listingId: String) {
         viewModelScope.launch {
             uiState = uiState.copy(isLoading = true)
@@ -38,7 +47,7 @@ class ItemDetailViewModel @Inject constructor(
             // Fetch listing and seller in parallel feel
             when (val result = listingRepository.getListingById(listingId)) {
                 is AppResult.Success -> {
-                    uiState = uiState.copy(listing = result.data)
+        uiState = uiState.copy(listing = result.data, inCart = cartRepository.isInCart(result.data.id))
                     // Now fetch the seller using sellerId from listing
                     loadSeller(result.data.sellerId)
                 }
@@ -71,5 +80,6 @@ data class ItemDetailUiState(
     val listing: Listing? = null,
     val seller: User? = null,
     val isLoading: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val inCart: Boolean = false
 )
