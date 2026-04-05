@@ -1,0 +1,37 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="200dp"
+    android:height="200dp"
+    android:viewportWidth="200"
+    android:viewportHeight="200">
+
+    <!-- Outer Circular Exchange Paths -->
+    <path
+        android:pathData="M100,20 A80,80 0 0,1 180,100 M100,180 A80,80 0 0,1 20,100"
+        android:strokeWidth="12"
+        android:strokeLineCap="round">
+        <aapt:attr name="android:strokeColor">
+            <gradient
+                android:startX="20" android:startY="100"
+                android:endX="180" android:endY="100"
+                android:type="linear">
+                <item android:offset="0" android:color="#FF6200EE"/>
+                <item android:offset="1" android:color="#FFBB86FC"/>
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Arrow Heads for Exchange Concept -->
+    <path
+        android:fillColor="#FF6200EE"
+        android:pathData="M180,90 L190,105 L170,105 Z" />
+    <path
+        android:fillColor="#FFBB86FC"
+        android:pathData="M20,110 L10,95 L30,95 Z" />
+
+    <!-- Center 'E' Icon (Stylized) -->
+    <path
+        android:fillColor="#FF6200EE"
+        android:pathData="M70,70 H130 V85 H85 V100 H120 V115 H85 V130 H130 V145 H70 Z" />
+
+</vector>

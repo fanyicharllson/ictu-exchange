@@ -1,7 +1,6 @@
 package com.fanyiadrien.ictu_ex
 
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
@@ -11,7 +10,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.fragment.app.FragmentActivity
 import androidx.navigation.compose.rememberNavController
 import com.fanyiadrien.ictu_ex.core.biometric.BiometricHelper
@@ -25,8 +26,6 @@ import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.delay
 import javax.inject.Inject
 
-private const val TAG = "MainActivity"
-
 @AndroidEntryPoint
 class MainActivity : FragmentActivity() {
 
@@ -37,6 +36,9 @@ class MainActivity : FragmentActivity() {
     lateinit var lightSensorManager: LightSensorManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Explicitly call the companion function
+        installSplashScreen()
+        
         super.onCreate(savedInstanceState)
 
         setContent {
@@ -58,32 +60,23 @@ class MainActivity : FragmentActivity() {
                 
                 val currentUser = auth.currentUser
                 if (currentUser != null) {
-                    Log.d(TAG, "User is logged in: ${currentUser.email}. Triggering biometric...")
-                    
                     if (BiometricHelper.isAvailable(this@MainActivity)) {
                         BiometricHelper.authenticate(
                             activity = this@MainActivity,
                             onSuccess = {
-                                Log.d(TAG, "Biometric success!")
                                 startDestination = Screen.Home.route
                                 isLoading = false
                             },
-                            onFailure = {
-                                Log.w(TAG, "Biometric failed")
-                            },
+                            onFailure = { /* Handled by Biometric prompt */ },
                             onError = { error ->
-                                Log.e(TAG, "Biometric error: $error")
-                                // If user cancels or error occurs, we don't proceed to home
                                 biometricError = error
                             }
                         )
                     } else {
-                        Log.w(TAG, "Biometric not available, skipping to Home")
                         startDestination = Screen.Home.route
                         isLoading = false
                     }
                 } else {
-                    Log.d(TAG, "No user logged in. Redirecting to Onboarding.")
                     startDestination = Screen.Onboarding.route
                     isLoading = false
                 }
@@ -95,8 +88,7 @@ class MainActivity : FragmentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     if (isLoading) {
-                        SplashScreen(errorMessage = biometricError) {
-                            // Retry logic if biometric failed/errored
+                        AppSplashScreen(errorMessage = biometricError) {
                             biometricError = null
                             recreate() 
                         }
@@ -116,7 +108,7 @@ class MainActivity : FragmentActivity() {
     }
 
     @Composable
-    private fun SplashScreen(errorMessage: String? = null, onRetry: () -> Unit) {
+    private fun AppSplashScreen(errorMessage: String? = null, onRetry: () -> Unit) {
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
@@ -127,39 +119,70 @@ class MainActivity : FragmentActivity() {
                 modifier = Modifier.padding(24.dp)
             ) {
                 Image(
-                    painter = painterResource(id = R.drawable.check),
-                    contentDescription = "ICTU-Ex Logo",
-                    modifier = Modifier.size(100.dp)
+                    painter = painterResource(id = R.drawable.ic_exchange_logo),
+                    contentDescription = "ICTU-Exchange Logo",
+                    modifier = Modifier.size(120.dp)
                 )
                 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(32.dp))
 
                 if (errorMessage != null) {
                     Text(
-                        text = "Authentication Required",
+                        text = "Identity Verification Required",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.error
                     )
+                    Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = errorMessage,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Button(onClick = onRetry) {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Button(
+                        onClick = onRetry,
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+                    ) {
                         Text("Retry Verification")
                     }
                 } else {
                     CircularProgressIndicator(
-                        modifier = Modifier.size(48.dp),
+                        modifier = Modifier.size(40.dp),
                         color = MaterialTheme.colorScheme.primary,
-                        strokeWidth = 4.dp
+                        strokeWidth = 3.dp
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = "Verifying Identity...",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onBackground
+                        text = "ICTU-Exchange",
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Secure Student Marketplace",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            // Footer branding
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(bottom = 32.dp),
+                contentAlignment = Alignment.BottomCenter
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "Made by",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    )
+                    Text(
+                        text = "Charllson & Adrien",
+                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
             }
