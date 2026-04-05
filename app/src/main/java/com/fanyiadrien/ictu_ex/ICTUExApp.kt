@@ -21,6 +21,7 @@ class IctuExApp : Application() {
     private fun initCloudinary() {
         val config: Map<String, String> = mapOf(
             "cloud_name" to BuildConfig.CLOUDINARY_CLOUD_NAME,
+
             "api_key" to BuildConfig.CLOUDINARY_API_KEY,
             "api_secret" to BuildConfig.CLOUDINARY_API_SECRET
         )

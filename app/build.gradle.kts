@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -6,6 +8,9 @@ plugins {
     alias(libs.plugins.googleServices)
     alias(libs.plugins.daggerHiltAndroid)
 }
+
+val localProps = Properties()
+localProps.load(rootProject.file("local.properties").inputStream())
 
 android {
     namespace = "com.fanyiadrien.ictu_ex"
@@ -19,6 +24,22 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField(
+            "String",
+            "CLOUDINARY_CLOUD_NAME",
+            "\"${localProps.getProperty("CLOUDINARY_CLOUD_NAME")}\""
+        )
+        buildConfigField(
+            "String",
+            "CLOUDINARY_API_KEY",
+            "\"${localProps.getProperty("CLOUDINARY_API_KEY")}\""
+        )
+        buildConfigField(
+            "String",
+            "CLOUDINARY_API_SECRET",
+            "\"${localProps.getProperty("CLOUDINARY_API_SECRET")}\""
+        )
     }
 
     buildTypes {
@@ -39,6 +60,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
