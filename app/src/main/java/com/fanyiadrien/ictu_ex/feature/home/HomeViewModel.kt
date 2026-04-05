@@ -11,6 +11,7 @@ import com.fanyiadrien.ictu_ex.data.model.ListingCategory
 import com.fanyiadrien.ictu_ex.data.model.User
 import com.fanyiadrien.ictu_ex.data.repository.ListingRepository
 import com.fanyiadrien.ictu_ex.data.repository.UserRepository
+import com.fanyiadrien.ictu_ex.data.repository.WishlistRepository
 import com.fanyiadrien.ictu_ex.utils.AppResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -21,83 +22,71 @@ private const val TAG = "HomeViewModel"
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val listingRepository: ListingRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val wishlistRepository: WishlistRepository
 ) : ViewModel() {
 
     var uiState by mutableStateOf(HomeUiState())
         private set
 
     init {
-        Log.d(TAG, "🚀 HomeViewModel initialized")
         loadCurrentUser()
         fetchListings()
+        loadWishlist()
     }
 
     private fun loadCurrentUser() {
-        Log.d(TAG, "📥 Loading current user...")
         viewModelScope.launch {
             when (val result = userRepository.getCurrentUser()) {
                 is AppResult.Success -> {
-                    Log.d(TAG, "✅ Current user loaded: ${result.data.displayName}")
                     uiState = uiState.copy(currentUser = result.data)
                 }
-                is AppResult.Error -> {
-                    Log.e(TAG, "❌ Failed to load current user: ${result.message}")
-                }
-                else -> {
-                    Log.w(TAG, "⚠️ Unexpected result type loading user")
-                }
+                else -> Unit
             }
         }
     }
 
+    private fun loadWishlist() {
+        viewModelScope.launch {
+            val ids = wishlistRepository.getWishlistedIds()
+            uiState = uiState.copy(wishlistedIds = ids.toSet())
+        }
+    }
+
+    fun toggleWishlist(listingId: String) {
+        viewModelScope.launch {
+            val isAdded = wishlistRepository.toggleWishlist(listingId)
+            val current = uiState.wishlistedIds.toMutableSet()
+            if (isAdded) current.add(listingId) else current.remove(listingId)
+            uiState = uiState.copy(wishlistedIds = current)
+        }
+    }
+
     fun fetchListings() {
-        Log.d(TAG, "📡 fetchListings() called - requesting data from repository...")
         viewModelScope.launch {
             uiState = uiState.copy(isLoading = true, errorMessage = null)
-            Log.d(TAG, "⏳ Set isLoading = true, errorMessage = null")
-            
             when (val result = listingRepository.getAllListings()) {
                 is AppResult.Success -> {
-                    Log.d(TAG, "✅ Successfully fetched ${result.data.size} listings from Firestore")
-                    if (result.data.isEmpty()) {
-                        Log.w(TAG, "⚠️ No listings returned from Firestore (empty list)")
-                    } else {
-                        Log.d(TAG, "📋 First listing: ${result.data.first().title}")
-                    }
-                    
                     val filtered = applyFilter(
                         result.data,
                         uiState.selectedCategory,
                         uiState.searchQuery
                     )
-                    Log.d(TAG, "🔍 After filtering: ${filtered.size} listings")
-                    
                     uiState = uiState.copy(
                         isLoading = false,
                         allListings = result.data,
                         filteredListings = filtered
                     )
-                    Log.d(TAG, "✅ UI state updated with listings")
                 }
-
                 is AppResult.Error -> {
-                    Log.e(TAG, "❌ Error fetching listings: ${result.message}")
-                    uiState = uiState.copy(
-                        isLoading = false, 
-                        errorMessage = result.message
-                    )
+                    uiState = uiState.copy(isLoading = false, errorMessage = result.message)
                 }
-
-                else -> {
-                    Log.w(TAG, "⚠️ Unexpected result type: ${result::class.simpleName}")
-                }
+                else -> Unit
             }
         }
     }
 
     fun onCategorySelected(category: ListingCategory) {
-        Log.d(TAG, "🏷️ Category selected: ${category.displayName}")
         uiState = uiState.copy(
             selectedCategory = category,
             filteredListings = applyFilter(uiState.allListings, category, uiState.searchQuery)
@@ -105,7 +94,6 @@ class HomeViewModel @Inject constructor(
     }
 
     fun onSearchQueryChanged(query: String) {
-        Log.d(TAG, "🔍 Search query changed: '$query'")
         uiState = uiState.copy(
             searchQuery = query,
             filteredListings = applyFilter(uiState.allListings, uiState.selectedCategory, query)
@@ -138,10 +126,8 @@ data class HomeUiState(
     val filteredListings: List<Listing> = emptyList(),
     val selectedCategory: ListingCategory = ListingCategory.ALL,
     val searchQuery: String = "",
+    val wishlistedIds: Set<String> = emptySet()
 ) {
-    /** True only when loading is done AND there are genuinely no listings yet */
     val isEmpty: Boolean get() = !isLoading && allListings.isEmpty()
-
-    /** True if user is a seller — drives + button visibility */
     val isSeller: Boolean get() = currentUser?.userType == "SELLER"
 }

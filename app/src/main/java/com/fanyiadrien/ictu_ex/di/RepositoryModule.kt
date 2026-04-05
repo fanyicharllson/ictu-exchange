@@ -3,6 +3,7 @@ package com.fanyiadrien.ictu_ex.di
 import com.fanyiadrien.ictu_ex.data.repository.CartRepository
 import com.fanyiadrien.ictu_ex.data.repository.ListingRepository
 import com.fanyiadrien.ictu_ex.data.repository.UserRepository
+import com.fanyiadrien.ictu_ex.data.repository.WishlistRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import dagger.hilt.components.SingletonComponent
@@ -35,4 +36,11 @@ object RepositoryModule {
         auth: FirebaseAuth,
         firestore: FirebaseFirestore
     ): ListingRepository = ListingRepository(auth, firestore)
+
+    @Provides
+    @Singleton
+    fun provideWishlistRepository(
+        auth: FirebaseAuth,
+        firestore: FirebaseFirestore
+    ): WishlistRepository = WishlistRepository(auth, firestore)
 }
