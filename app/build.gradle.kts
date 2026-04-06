@@ -19,6 +19,11 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Cloudinary Configuration (Consider using gradle.properties for sensitive data)
+        buildConfigField("String", "CLOUDINARY_CLOUD_NAME", "\"your_cloud_name\"")
+        buildConfigField("String", "CLOUDINARY_API_KEY", "\"your_api_key\"")
+        buildConfigField("String", "CLOUDINARY_API_SECRET", "\"your_api_secret\"")
     }
 
     buildTypes {
@@ -39,6 +44,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -54,6 +60,7 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.material.icons.extended)
     implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.core.splashscreen)
 
     // ICTU-Ex Features
     implementation(libs.androidx.biometric)

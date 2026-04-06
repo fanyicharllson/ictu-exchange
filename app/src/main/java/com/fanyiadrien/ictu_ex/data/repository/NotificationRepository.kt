@@ -8,10 +8,7 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
-<<<<<<< Updated upstream
 import java.util.UUID
-=======
->>>>>>> Stashed changes
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -21,72 +18,46 @@ class NotificationRepository @Inject constructor(
     private val firestore: FirebaseFirestore
 ) {
 
-<<<<<<< Updated upstream
-    // ── Real-time listener ────────────────────────────────────────────────────
+    // ── Real-time reads ───────────────────────────────────────────────────────
 
-    /**
-     * Live stream of notifications for the currently logged-in user.
-     * Works for both sellers (NEW_ORDER) and buyers (NEW_LISTING, ORDER_PLACED).
-=======
-    /**
-     * Real-time stream of notifications for the current user.
->>>>>>> Stashed changes
-     */
+    /** Live stream of all notifications for the current user, newest first. */
     fun getNotifications(): Flow<List<Notification>> = callbackFlow {
         val uid = auth.currentUser?.uid
-        if (uid == null) {
-            trySend(emptyList())
-            close()
-            return@callbackFlow
-        }
+        if (uid == null) { trySend(emptyList()); close(); return@callbackFlow }
 
-        val subscription = firestore.collection("notifications")
-            .document(uid)
-            .collection("items")
+        val sub = firestore.collection("notifications")
+            .document(uid).collection("items")
             .orderBy("createdAt", Query.Direction.DESCENDING)
-            .addSnapshotListener { snapshot, error ->
-<<<<<<< Updated upstream
-                if (error != null) { close(error); return@addSnapshotListener }
-                snapshot?.let { trySend(it.toObjects(Notification::class.java)) }
-=======
-                if (error != null) {
-                    close(error)
-                    return@addSnapshotListener
-                }
-                if (snapshot != null) {
-                    val items = snapshot.toObjects(Notification::class.java)
-                    trySend(items)
-                }
->>>>>>> Stashed changes
+            .addSnapshotListener { snap, err ->
+                if (err != null) { close(err); return@addSnapshotListener }
+                snap?.let { trySend(it.toObjects(Notification::class.java)) }
             }
 
-        awaitClose { subscription.remove() }
+        awaitClose { sub.remove() }
     }
 
-<<<<<<< Updated upstream
-    /** Count of unread notifications — used for the badge in the bottom nav. */
+    /** Live count of unread notifications — drives the badge in IctuBottomNav. */
     fun getUnreadCount(): Flow<Int> = callbackFlow {
         val uid = auth.currentUser?.uid
         if (uid == null) { trySend(0); close(); return@callbackFlow }
 
-        val subscription = firestore.collection("notifications")
-            .document(uid)
-            .collection("items")
+        val sub = firestore.collection("notifications")
+            .document(uid).collection("items")
             .whereEqualTo("read", false)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) { close(error); return@addSnapshotListener }
-                trySend(snapshot?.size() ?: 0)
+            .addSnapshotListener { snap, err ->
+                if (err != null) { close(err); return@addSnapshotListener }
+                trySend(snap?.size() ?: 0)
             }
 
-        awaitClose { subscription.remove() }
+        awaitClose { sub.remove() }
     }
 
-    // ── Write: seller posts a new listing → notify all buyers ────────────────
+    // ── Writes ────────────────────────────────────────────────────────────────
 
     /**
-     * Called by PostItemViewModel after a listing is saved.
-     * Fetches every user with userType == "BUYER" and writes a NEW_LISTING
-     * notification document under notifications/{buyerUid}/items/{notifId}.
+     * Called by PostItemViewModel after a listing is saved to Firestore.
+     * Fetches every user with userType == "BUYER" and batch-writes a
+     * NEW_LISTING notification to each one.
      */
     suspend fun notifyBuyersNewListing(
         sellerId: String,
@@ -95,45 +66,38 @@ class NotificationRepository @Inject constructor(
         listingId: String,
         priceXaf: Double
     ) {
-        val now = System.currentTimeMillis()
-
-        // Fetch all buyers
         val buyerDocs = firestore.collection("users")
             .whereEqualTo("userType", "BUYER")
-            .get()
-            .await()
+            .get().await()
 
         if (buyerDocs.isEmpty) return
 
         val batch = firestore.batch()
+        val now = System.currentTimeMillis()
 
         for (doc in buyerDocs.documents) {
             val buyerUid = doc.id
-            if (buyerUid == sellerId) continue   // don't notify yourself
+            if (buyerUid == sellerId) continue
 
             val notifId = UUID.randomUUID().toString()
             val ref = firestore.collection("notifications")
-                .document(buyerUid)
-                .collection("items")
-                .document(notifId)
+                .document(buyerUid).collection("items").document(notifId)
 
             batch.set(ref, mapOf(
-                "notifId"      to notifId,
-                "type"         to "NEW_LISTING",
-                "sellerId"     to sellerId,
-                "sellerName"   to sellerName,
-                "listingId"    to listingId,
-                "itemSummary"  to "\"$listingTitle\" is now available for XAF ${priceXaf.toInt()}",
-                "totalXaf"     to priceXaf,
-                "read"         to false,
-                "createdAt"    to now
+                "notifId"     to notifId,
+                "type"        to "NEW_LISTING",
+                "sellerId"    to sellerId,
+                "sellerName"  to sellerName,
+                "listingId"   to listingId,
+                "itemSummary" to "\"$listingTitle\" is now available for XAF ${priceXaf.toInt()}",
+                "totalXaf"    to priceXaf,
+                "read"        to false,
+                "createdAt"   to now
             ))
         }
 
         batch.commit().await()
     }
-
-    // ── Write: buyer checks out → notify seller + confirm to buyer ────────────
 
     /**
      * Called by CartRepository.checkout() for each unique seller in the cart.
@@ -149,9 +113,7 @@ class NotificationRepository @Inject constructor(
     ) {
         val notifId = UUID.randomUUID().toString()
         firestore.collection("notifications")
-            .document(sellerId)
-            .collection("items")
-            .document(notifId)
+            .document(sellerId).collection("items").document(notifId)
             .set(mapOf(
                 "notifId"     to notifId,
                 "type"        to "NEW_ORDER",
@@ -162,8 +124,7 @@ class NotificationRepository @Inject constructor(
                 "totalXaf"    to totalXaf,
                 "read"        to false,
                 "createdAt"   to System.currentTimeMillis()
-            ))
-            .await()
+            )).await()
     }
 
     /**
@@ -178,9 +139,7 @@ class NotificationRepository @Inject constructor(
     ) {
         val notifId = UUID.randomUUID().toString()
         firestore.collection("notifications")
-            .document(buyerId)
-            .collection("items")
-            .document(notifId)
+            .document(buyerId).collection("items").document(notifId)
             .set(mapOf(
                 "notifId"     to notifId,
                 "type"        to "ORDER_PLACED",
@@ -189,8 +148,7 @@ class NotificationRepository @Inject constructor(
                 "totalXaf"    to totalXaf,
                 "read"        to false,
                 "createdAt"   to System.currentTimeMillis()
-            ))
-            .await()
+            )).await()
     }
 
     // ── Mark read / delete ────────────────────────────────────────────────────
@@ -199,29 +157,13 @@ class NotificationRepository @Inject constructor(
         val uid = auth.currentUser?.uid ?: return
         firestore.collection("notifications")
             .document(uid).collection("items").document(notifId)
-=======
-    suspend fun markAsRead(notifId: String) {
-        val uid = auth.currentUser?.uid ?: return
-        firestore.collection("notifications")
-            .document(uid)
-            .collection("items")
-            .document(notifId)
->>>>>>> Stashed changes
-            .update("read", true)
-            .await()
+            .update("read", true).await()
     }
 
     suspend fun deleteNotification(notifId: String) {
         val uid = auth.currentUser?.uid ?: return
         firestore.collection("notifications")
-<<<<<<< Updated upstream
             .document(uid).collection("items").document(notifId)
-=======
-            .document(uid)
-            .collection("items")
-            .document(notifId)
->>>>>>> Stashed changes
-            .delete()
-            .await()
+            .delete().await()
     }
 }

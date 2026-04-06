@@ -12,24 +12,18 @@ import com.fanyiadrien.ictu_ex.feature.activity.MyActivityScreen
 import com.fanyiadrien.ictu_ex.feature.auth.CheckStatusScreen
 import com.fanyiadrien.ictu_ex.feature.auth.SignInScreen
 import com.fanyiadrien.ictu_ex.feature.auth.SignUpScreen
+import com.fanyiadrien.ictu_ex.feature.cart.CartScreen
 import com.fanyiadrien.ictu_ex.feature.detail.ItemDetailScreen
 import com.fanyiadrien.ictu_ex.feature.home.HomeScreen
 import com.fanyiadrien.ictu_ex.feature.notifications.NotificationScreen
 import com.fanyiadrien.ictu_ex.feature.onboarding.OnboardingScreen
 import com.fanyiadrien.ictu_ex.feature.post.PostItemScreen
-import com.fanyiadrien.ictu_ex.feature.cart.CartScreen
 import com.fanyiadrien.ictu_ex.feature.profile.EditProfileScreen
 import com.fanyiadrien.ictu_ex.feature.profile.ProfileScreen
 import com.fanyiadrien.ictu_ex.feature.settings.SettingScreen
-import com.fanyiadrien.ictu_ex.feature.notifications.NotificationScreen
 import com.fanyiadrien.ictu_ex.ui.theme.ThemeMode
 import com.google.firebase.auth.FirebaseAuth
 
-<<<<<<< Updated upstream
-=======
-private const val TAG = "ICTU_NavGraph"
-
->>>>>>> Stashed changes
 @Composable
 fun NavGraph(
     navController: NavHostController,
@@ -38,41 +32,29 @@ fun NavGraph(
     themeMode: ThemeMode,
     onThemeModeChange: (ThemeMode) -> Unit
 ) {
-    NavHost(
-        navController    = navController,
-        startDestination = startDestination
-    ) {
+    NavHost(navController = navController, startDestination = startDestination) {
 
-        // ── Onboarding ────────────────────────────────────────────────────────
-        composable(route = Screen.Onboarding.route) {
+        composable(Screen.Onboarding.route) {
             OnboardingScreen(navController = navController)
         }
 
-        composable(route = Screen.CheckStatus.route) {
+        composable(Screen.CheckStatus.route) {
             CheckStatusScreen(navController = navController)
         }
 
-        // ── Auth ──────────────────────────────────────────────────────────────
         composable(
             route     = Screen.SignUp.route,
-<<<<<<< Updated upstream
             arguments = listOf(navArgument("userType") { type = NavType.StringType })
-=======
-            arguments = listOf(
-                navArgument("userType") { type = NavType.StringType }
-            )
->>>>>>> Stashed changes
         ) { backStackEntry ->
             val userType = backStackEntry.arguments?.getString("userType") ?: "BUYER"
             SignUpScreen(navController = navController, userType = userType)
         }
 
-        composable(route = Screen.SignIn.route) {
+        composable(Screen.SignIn.route) {
             SignInScreen(navController = navController)
         }
 
-        // ── Main App ──────────────────────────────────────────────────────────
-        composable(route = Screen.Home.route) {
+        composable(Screen.Home.route) {
             HomeScreen(
                 navController     = navController,
                 themeMode         = themeMode,
@@ -87,38 +69,35 @@ fun NavGraph(
             ItemDetailScreen(navController = navController)
         }
 
-        composable(route = Screen.PostItem.route) {
+        composable(Screen.PostItem.route) {
             val capturedUriString = navController.currentBackStackEntry
-                ?.savedStateHandle
-                ?.get<String>("captured_image_uri")
-
+                ?.savedStateHandle?.get<String>("captured_image_uri")
             PostItemScreen(
                 navController    = navController,
                 capturedImageUri = capturedUriString?.let { Uri.parse(it) }
             )
         }
 
-        composable(route = Screen.Camera.route) {
+        composable(Screen.Camera.route) {
             CameraScreen(
                 onImageCaptured = { uri ->
                     navController.previousBackStackEntry
-                        ?.savedStateHandle
-                        ?.set("captured_image_uri", uri.toString())
+                        ?.savedStateHandle?.set("captured_image_uri", uri.toString())
                     navController.popBackStack()
                 },
                 onBack = { navController.popBackStack() }
             )
         }
 
-        composable(route = Screen.Profile.route) {
+        composable(Screen.Profile.route) {
             ProfileScreen(navController = navController)
         }
 
-        composable(route = Screen.EditProfile.route) {
+        composable(Screen.EditProfile.route) {
             EditProfileScreen(navController = navController)
         }
 
-        composable(route = Screen.Settings.route) {
+        composable(Screen.Settings.route) {
             SettingScreen(
                 navController     = navController,
                 themeMode         = themeMode,
@@ -126,19 +105,16 @@ fun NavGraph(
             )
         }
 
-        composable(route = Screen.Cart.route) {
+        composable(Screen.Cart.route) {
             CartScreen(navController = navController)
         }
 
-        composable(route = Screen.Notifications.route) {
+        composable(Screen.Notifications.route) {
             NotificationScreen(navController = navController)
         }
-<<<<<<< Updated upstream
 
-        composable(route = Screen.MyActivity.route) {
+        composable(Screen.MyActivity.route) {
             MyActivityScreen(navController = navController)
         }
-=======
->>>>>>> Stashed changes
     }
 }
