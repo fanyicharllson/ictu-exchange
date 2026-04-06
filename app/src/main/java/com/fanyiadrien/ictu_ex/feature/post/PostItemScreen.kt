@@ -53,25 +53,10 @@ fun PostItemScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
+    BackHandler(enabled = uiState.isLocked) {}
 
-    // ── Block back press while uploading/saving ───────────────────────────────
-    BackHandler(enabled = uiState.isLocked) {
-        // Do nothing — silently blocks back press during upload
-    }
     LaunchedEffect(capturedImageUri) {
         capturedImageUri?.let { viewModel.onImageSelected(it) }
-    }
-
-    // Show success message when listing is posted
-    LaunchedEffect(uiState.isSuccess) {
-        if (uiState.isSuccess) {
-            scope.launch {
-                snackbarHostState.showSnackbar(
-                    message = "✓ Listing posted successfully!",
-                    duration = SnackbarDuration.Short
-                )
-            }
-        }
     }
 
     // ── Gallery picker ────────────────────────────────────────────────────────
@@ -87,7 +72,7 @@ fun PostItemScreen(
         if (granted) navController.navigate(Screen.Camera.route)
         else {
             scope.launch {
-                snackbarHostState.showSnackbar("Camera permission needed to scan QR codes")
+                snackbarHostState.showSnackbar("Camera permission is required to take a photo")
             }
         }
     }

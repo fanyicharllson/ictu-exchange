@@ -2,6 +2,7 @@ package com.fanyiadrien.ictu_ex.data.repository
 
 import com.fanyiadrien.ictu_ex.data.model.ChatMessage
 import com.fanyiadrien.ictu_ex.data.model.ChatThread
+import com.fanyiadrien.ictu_ex.data.model.User
 import com.fanyiadrien.ictu_ex.utils.AppError
 import com.fanyiadrien.ictu_ex.utils.AppResult
 import com.google.firebase.auth.FirebaseAuth
@@ -23,6 +24,20 @@ class MessagesRepository @Inject constructor(
 
     private val chatsCollection = firestore.collection("chats")
 
+    /** Returns all users in the app excluding the current user. */
+    suspend fun fetchAllUsers(): List<User> {
+        val uid = auth.currentUser?.uid ?: return emptyList()
+        return try {
+            firestore.collection("users")
+                .get().await()
+                .documents
+                .mapNotNull { it.toObject(User::class.java)?.copy(uid = it.id) }
+                .filter { it.uid != uid }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
     fun observeThreads(): Flow<List<ChatThread>> = callbackFlow {
         val uid = auth.currentUser?.uid
         if (uid.isNullOrBlank()) {
@@ -39,6 +54,18 @@ class MessagesRepository @Inject constructor(
                     doc.toObject(ChatThread::class.java)?.copy(id = doc.id)
                 }.orEmpty()
                 trySend(threads)
+            }
+
+        awaitClose { registration.remove() }
+    }
+
+    fun observeThread(threadId: String): Flow<ChatThread?> = callbackFlow {
+        if (threadId.isBlank()) { trySend(null); close(); return@callbackFlow }
+
+        val registration = chatsCollection.document(threadId)
+            .addSnapshotListener { snapshot, _ ->
+                val thread = snapshot?.toObject(ChatThread::class.java)?.copy(id = snapshot.id)
+                trySend(thread)
             }
 
         awaitClose { registration.remove() }
@@ -126,6 +153,44 @@ class MessagesRepository @Inject constructor(
                 "lastMessage" to text.trim(),
                 "lastMessageAt" to now,
                 "updatedAt" to now,
+                "unreadCountByUser.$uid" to 0L
+            )
+            if (!receiverId.isNullOrBlank()) {
+                updates["unreadCountByUser.$receiverId"] = FieldValue.increment(1)
+            }
+            threadRef.update(updates).await()
+
+            AppResult.Success(Unit)
+        } catch (e: Exception) {
+            AppResult.Error(AppError.SAVE_FAILED, e)
+        }
+    }
+
+    /** Writes a message document that carries an image URL instead of text. */
+    suspend fun sendImageMessage(threadId: String, imageUrl: String): AppResult<Unit> {
+        val uid = auth.currentUser?.uid ?: return AppResult.Error(AppError.UNKNOWN_AUTH_ERROR)
+        if (threadId.isBlank()) return AppResult.Error("Invalid thread.")
+
+        return try {
+            val threadRef = chatsCollection.document(threadId)
+            val threadDoc = threadRef.get().await()
+            val participantIds = threadDoc.get("participantIds") as? List<*> ?: emptyList<Any>()
+            val receiverId = participantIds.firstOrNull { it is String && it != uid } as? String
+            val now = System.currentTimeMillis()
+
+            threadRef.collection("messages").document().set(
+                mapOf(
+                    "senderId"  to uid,
+                    "text"      to "",
+                    "imageUrl"  to imageUrl,
+                    "createdAt" to now
+                )
+            ).await()
+
+            val updates = mutableMapOf<String, Any>(
+                "lastMessage"  to "📷 Photo",
+                "lastMessageAt" to now,
+                "updatedAt"    to now,
                 "unreadCountByUser.$uid" to 0L
             )
             if (!receiverId.isNullOrBlank()) {

@@ -15,7 +15,8 @@ import com.fanyiadrien.ictu_ex.feature.auth.SignUpScreen
 import com.fanyiadrien.ictu_ex.feature.cart.CartScreen
 import com.fanyiadrien.ictu_ex.feature.detail.ItemDetailScreen
 import com.fanyiadrien.ictu_ex.feature.home.HomeScreen
-import com.fanyiadrien.ictu_ex.feature.messages.MessagesScreen
+import com.fanyiadrien.ictu_ex.feature.messages.ChatListScreen
+import com.fanyiadrien.ictu_ex.feature.messages.ChatScreen
 import com.fanyiadrien.ictu_ex.feature.notifications.NotificationScreen
 import com.fanyiadrien.ictu_ex.feature.onboarding.OnboardingScreen
 import com.fanyiadrien.ictu_ex.feature.post.PostItemScreen
@@ -114,22 +115,32 @@ fun NavGraph(
             NotificationScreen(navController = navController)
         }
 
+        // ── Chat list (all conversations) ─────────────────────────────────────
+        composable(Screen.ChatList.route) {
+            ChatListScreen(navController = navController)
+        }
+
+        // ── Individual chat (opened from ChatList by threadId) ────────────────
+        composable(
+            route     = Screen.Chat.route,
+            arguments = listOf(navArgument("threadId") { type = NavType.StringType })
+        ) {
+            ChatScreen(navController = navController)
+        }
+
+        // ── Deep-link: open/create thread from ItemDetail (sellerId + listingId)
         composable(
             route = Screen.Messages.routeWithArgs,
             arguments = listOf(
                 navArgument(Screen.Messages.sellerIdArg) {
-                    type = NavType.StringType
-                    nullable = true
-                    defaultValue = null
+                    type = NavType.StringType; nullable = true; defaultValue = null
                 },
                 navArgument(Screen.Messages.listingIdArg) {
-                    type = NavType.StringType
-                    nullable = true
-                    defaultValue = null
+                    type = NavType.StringType; nullable = true; defaultValue = null
                 }
             )
         ) {
-            MessagesScreen(navController = navController)
+            ChatScreen(navController = navController)
         }
 
         composable(Screen.MyActivity.route) {

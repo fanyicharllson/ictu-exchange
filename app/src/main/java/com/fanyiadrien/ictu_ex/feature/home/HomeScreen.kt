@@ -77,11 +77,13 @@ fun HomeScreen(
             // ── 1. Premium Top Bar with Profile ───────────────────────────
             item {
                 HomeTopBar(
-                    user = uiState.currentUser,
-                    isSeller = uiState.isSeller,
-                    cartItemCount = uiState.cartItemCount,
-                    onCartClick = { navController.navigate(Screen.Cart.route) },
-                    onProfileClick = { navController.navigate(Screen.Profile.route) }
+                    user              = uiState.currentUser,
+                    isSeller          = uiState.isSeller,
+                    cartItemCount     = uiState.cartItemCount,
+                    unreadNotifCount  = uiState.unreadNotifCount,
+                    onCartClick       = { navController.navigate(Screen.Cart.route) },
+                    onNotificationClick = { navController.navigate(Screen.Notifications.route) },
+                    onProfileClick    = { navController.navigate(Screen.Profile.route) }
                 )
             }
 
@@ -166,7 +168,9 @@ private fun HomeTopBar(
     user: User?,
     isSeller: Boolean,
     cartItemCount: Int,
+    unreadNotifCount: Int,
     onCartClick: () -> Unit,
+    onNotificationClick: () -> Unit,
     onProfileClick: () -> Unit
 ) {
     Row(
@@ -174,12 +178,14 @@ private fun HomeTopBar(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // ── Left: avatar + greeting ───────────────────────────────────────
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.clickable { onProfileClick() }
         ) {
             Box(
-                modifier = Modifier.size(48.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant),
+                modifier = Modifier.size(48.dp).clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center
             ) {
                 if (user?.profileImageUrl?.isNotEmpty() == true) {
@@ -196,8 +202,8 @@ private fun HomeTopBar(
             Spacer(Modifier.width(12.dp))
             Column {
                 Text(
-                    text = "Hey, ${user?.displayName ?: "Student"}! 👋", 
-                    style = MaterialTheme.typography.labelSmall, 
+                    text  = "Hey, ${user?.displayName ?: "Student"}! 👋",
+                    style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -206,9 +212,32 @@ private fun HomeTopBar(
                 }
             }
         }
-        
-        if (!isSeller) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+
+        // ── Right: notification bell + cart (buyers only) ─────────────────
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Notification bell — visible to everyone
+            BadgedBox(
+                badge = {
+                    if (unreadNotifCount > 0) {
+                        Badge { Text(if (unreadNotifCount > 9) "9+" else unreadNotifCount.toString()) }
+                    }
+                }
+            ) {
+                IconButton(
+                    onClick  = onNotificationClick,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                    Icon(Icons.Rounded.Notifications, null, tint = MaterialTheme.colorScheme.onSurface)
+                }
+            }
+
+            // Cart icon — buyers only
+            if (!isSeller) {
                 BadgedBox(
                     badge = {
                         if (cartItemCount > 0) {
@@ -217,7 +246,7 @@ private fun HomeTopBar(
                     }
                 ) {
                     IconButton(
-                        onClick = onCartClick,
+                        onClick  = onCartClick,
                         modifier = Modifier
                             .clip(RoundedCornerShape(14.dp))
                             .background(MaterialTheme.colorScheme.surfaceVariant)

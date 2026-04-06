@@ -11,6 +11,7 @@ import com.fanyiadrien.ictu_ex.data.model.ListingCategory
 import com.fanyiadrien.ictu_ex.data.model.User
 import com.fanyiadrien.ictu_ex.data.repository.CartRepository
 import com.fanyiadrien.ictu_ex.data.repository.ListingRepository
+import com.fanyiadrien.ictu_ex.data.repository.NotificationRepository
 import com.fanyiadrien.ictu_ex.data.repository.UserRepository
 import com.fanyiadrien.ictu_ex.data.repository.WishlistRepository
 import com.fanyiadrien.ictu_ex.utils.AppResult
@@ -25,7 +26,8 @@ class HomeViewModel @Inject constructor(
     private val listingRepository: ListingRepository,
     private val userRepository: UserRepository,
     private val wishlistRepository: WishlistRepository,
-    private val cartRepository: CartRepository
+    private val cartRepository: CartRepository,
+    private val notificationRepository: NotificationRepository
 ) : ViewModel() {
 
     var uiState by mutableStateOf(HomeUiState())
@@ -36,12 +38,21 @@ class HomeViewModel @Inject constructor(
         fetchListings()
         loadWishlist()
         observeCart()
+        observeUnreadCount()
     }
 
     private fun observeCart() {
         viewModelScope.launch {
             cartRepository.items.collect { items ->
                 uiState = uiState.copy(cartItemCount = items.sumOf { it.quantity })
+            }
+        }
+    }
+
+    private fun observeUnreadCount() {
+        viewModelScope.launch {
+            notificationRepository.getUnreadCount().collect { count ->
+                uiState = uiState.copy(unreadNotifCount = count)
             }
         }
     }
@@ -138,7 +149,8 @@ data class HomeUiState(
     val selectedCategory: ListingCategory = ListingCategory.ALL,
     val searchQuery: String = "",
     val wishlistedIds: Set<String> = emptySet(),
-    val cartItemCount: Int = 0
+    val cartItemCount: Int = 0,
+    val unreadNotifCount: Int = 0
 ) {
     val isEmpty: Boolean get() = !isLoading && allListings.isEmpty()
     val isSeller: Boolean get() = currentUser?.userType == "SELLER"

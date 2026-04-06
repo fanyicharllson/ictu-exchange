@@ -13,7 +13,6 @@ import com.fanyiadrien.ictu_ex.data.remote.CloudinaryService
 import com.fanyiadrien.ictu_ex.data.repository.ListingRepository
 import com.fanyiadrien.ictu_ex.data.repository.NotificationRepository
 import com.fanyiadrien.ictu_ex.data.repository.UserRepository
-import com.fanyiadrien.ictu_ex.utils.AppError
 import com.fanyiadrien.ictu_ex.utils.AppResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -30,60 +29,41 @@ class PostItemViewModel @Inject constructor(
     var uiState by mutableStateOf(PostItemUiState())
         private set
 
-    // ── Form field updates ────────────────────────────────────────────────────
-
     fun onTitleChanged(value: String)       { uiState = uiState.copy(title = value, errorMessage = null) }
     fun onDescriptionChanged(value: String) { uiState = uiState.copy(description = value) }
     fun onPriceChanged(value: String)       { uiState = uiState.copy(price = value, errorMessage = null) }
     fun onCategorySelected(cat: ListingCategory) { uiState = uiState.copy(selectedCategory = cat) }
-
-    fun onImageSelected(uri: Uri) {
-        uiState = uiState.copy(selectedImageUri = uri, errorMessage = null)
-    }
-
-    fun clearError() {
-        uiState = uiState.copy(errorMessage = null)
-    }
-
-    // ── Post listing — the full 2-step pipeline ───────────────────────────────
+    fun onImageSelected(uri: Uri)           { uiState = uiState.copy(selectedImageUri = uri, errorMessage = null) }
+    fun clearError()                        { uiState = uiState.copy(errorMessage = null) }
 
     /**
-     * Step 1 → Upload image to Cloudinary
-     * Step 2 → Save listing to Firestore
-     *
-     * During step 1: isUploading = true  → screen shows "Uploading image…"
-     * During step 2: isSaving = true     → screen shows "Saving listing…"
-     * Both states: entire UI is locked, back press blocked
-     *
-     * @param context  Needed by Cloudinary SDK
-     * @param onSuccess Called when listing is saved — screen navigates back
+     * Full pipeline:
+     *   1. Validate form
+     *   2. Upload image to Cloudinary
+     *   3. Save listing to Firestore
+     *   4. Fire-and-forget buyer notifications (never blocks or crashes the pipeline)
+     *   5. Call onSuccess — caller navigates away
      */
     fun postListing(context: Context, onSuccess: () -> Unit) {
+        // ── Validate ──────────────────────────────────────────────────────────
         val imageUri = uiState.selectedImageUri
         if (imageUri == null) {
             uiState = uiState.copy(errorMessage = "Please select an image.")
             return
         }
-
-        // Basic form validation before hitting any network
-        val priceValue = uiState.price.toDoubleOrNull()
         if (uiState.title.isBlank()) {
             uiState = uiState.copy(errorMessage = "Please enter a title.")
             return
         }
+        val priceValue = uiState.price.toDoubleOrNull()
         if (priceValue == null || priceValue <= 0) {
             uiState = uiState.copy(errorMessage = "Please enter a valid price.")
             return
         }
 
         viewModelScope.launch {
-
-            // ── Step 1: Upload image ──────────────────────────────────────
-            uiState = uiState.copy(
-                isUploading  = true,
-                isSaving     = false,
-                errorMessage = null
-            )
+            // ── Step 1: Upload image ──────────────────────────────────────────
+            uiState = uiState.copy(isUploading = true, isSaving = false, errorMessage = null)
 
             val uploadResult = cloudinaryService.uploadImage(
                 context  = context,
@@ -92,90 +72,84 @@ class PostItemViewModel @Inject constructor(
             )
 
             if (uploadResult is AppResult.Error) {
-                uiState = uiState.copy(
-                    isUploading  = false,
-                    errorMessage = uploadResult.message
-                )
+                uiState = uiState.copy(isUploading = false, errorMessage = uploadResult.message)
                 return@launch
             }
 
             val imageUrl = (uploadResult as AppResult.Success).data
 
-            // ── Step 2: Save to Firestore ─────────────────────────────────
+            // ── Step 2: Save listing to Firestore ─────────────────────────────
             uiState = uiState.copy(isUploading = false, isSaving = true)
 
-            // Fetch seller's studentId to attach to listing
             val sellerStudentId = when (val u = userRepository.getCurrentUser()) {
                 is AppResult.Success -> u.data.studentId
                 else -> ""
             }
 
             val listing = Listing(
-                title          = uiState.title.trim(),
-                description    = uiState.description.trim(),
-                price          = priceValue,
-                imageUrl       = imageUrl,
-                category       = uiState.selectedCategory.displayName,
+                title           = uiState.title.trim(),
+                description     = uiState.description.trim(),
+                price           = priceValue,
+                imageUrl        = imageUrl,
+                category        = uiState.selectedCategory.displayName,
                 sellerStudentId = sellerStudentId,
-                available    = true
+                available       = true
             )
 
             when (val saveResult = listingRepository.postListing(listing)) {
                 is AppResult.Success -> {
-                    // Notify all buyers about the new listing
-                    notificationRepository.notifyBuyersNewListing(
-                        sellerId     = saveResult.data.sellerId,
-                        sellerName   = sellerStudentId.ifBlank { "A seller" },
-                        listingTitle = saveResult.data.title,
-                        listingId    = saveResult.data.id,
-                        priceXaf     = saveResult.data.price
-                    )
-                    uiState = uiState.copy(isSaving = false, isSuccess = true)
+                    uiState = uiState.copy(isSaving = false)
+
+                    // ── Step 3: Notify buyers — fire-and-forget, never blocks ──
+                    // Wrapped in its own launch so any exception here does NOT
+                    // prevent navigation or leave the UI locked.
+                    viewModelScope.launch {
+                        runCatching {
+                            notificationRepository.notifyBuyersNewListing(
+                                sellerId     = saveResult.data.sellerId,
+                                sellerName   = sellerStudentId.ifBlank { "A seller" },
+                                listingTitle = saveResult.data.title,
+                                listingId    = saveResult.data.id,
+                                priceXaf     = saveResult.data.price
+                            )
+                        }
+                        // Silently ignore notification errors — listing is already saved
+                    }
+
+                    // Navigate away immediately after save succeeds
                     onSuccess()
                 }
                 is AppResult.Error -> {
-                    uiState = uiState.copy(
-                        isSaving     = false,
-                        errorMessage = saveResult.message
-                    )
+                    uiState = uiState.copy(isSaving = false, errorMessage = saveResult.message)
                 }
-                else -> Unit
+                else -> uiState = uiState.copy(isSaving = false)
             }
         }
     }
 }
 
-// ── UI State ──────────────────────────────────────────────────────────────────
-
 data class PostItemUiState(
-    // Form fields
     val title: String = "",
     val description: String = "",
     val price: String = "",
     val selectedCategory: ListingCategory = ListingCategory.TEXTBOOKS,
     val selectedImageUri: Uri? = null,
-
-    // Process states — two separate flags for two-step feedback
-    val isUploading: Boolean = false,   // Cloudinary upload in progress
-    val isSaving: Boolean = false,      // Firestore save in progress
-    val isSuccess: Boolean = false,
-
+    val isUploading: Boolean = false,
+    val isSaving: Boolean = false,
     val errorMessage: String? = null
 ) {
-    /** True when ANY async operation is running — used to lock the UI */
     val isLocked: Boolean get() = isUploading || isSaving
 
-    /** Human-readable status message shown in the loading overlay */
     val loadingMessage: String get() = when {
         isUploading -> "Uploading image…\nPlease wait"
         isSaving    -> "Saving your listing…"
         else        -> ""
     }
 
-    /** True when form has minimum required fields filled */
     val isFormValid: Boolean get() =
         title.isNotBlank() &&
-                price.isNotBlank() &&
-                price.toDoubleOrNull() != null &&
-                selectedImageUri != null
+        price.isNotBlank() &&
+        price.toDoubleOrNull() != null &&
+        price.toDoubleOrNull()!! > 0 &&
+        selectedImageUri != null
 }

@@ -7,9 +7,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Email
@@ -20,6 +22,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
@@ -95,6 +98,22 @@ fun SignUpScreen(
                         shape = RoundedCornerShape(bottomStart = 56.dp, bottomEnd = 56.dp)
                     )
             )
+
+            // ── Back Button ─────────────────────────────────────────────
+            IconButton(
+                onClick = { navController.popBackStack() },
+                modifier = Modifier
+                    .statusBarsPadding()
+                    .padding(16.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.2f))
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.ArrowBackIosNew,
+                    contentDescription = "Back",
+                    tint = Color.White
+                )
+            }
 
             Column(
                 modifier = Modifier
@@ -231,7 +250,7 @@ fun SignUpScreen(
                                 IconButton(onClick = { passwordVisible = !passwordVisible }) {
                                     Icon(
                                         imageVector = if (passwordVisible) Icons.Default.Visibility
-                                                      else Icons.Default.VisibilityOff,
+                                                     else Icons.Default.VisibilityOff,
                                         contentDescription = null,
                                         tint = fieldIcon
                                     )
@@ -256,36 +275,40 @@ fun SignUpScreen(
                                 IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
                                     Icon(
                                         imageVector = if (confirmPasswordVisible) Icons.Default.Visibility
-                                                      else Icons.Default.VisibilityOff,
+                                                     else Icons.Default.VisibilityOff,
                                         contentDescription = null,
                                         tint = fieldIcon
                                     )
                                 }
                             },
+                            isError = passwordMismatch,
                             shape = RoundedCornerShape(14.dp),
                             colors = fieldColors,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(vertical = 5.dp),
-                            singleLine = true,
-                            isError = passwordMismatch
+                            singleLine = true
                         )
 
                         if (passwordMismatch) {
-                            Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                "Passwords do not match",
+                                text = "Passwords do not match",
                                 color = errorColor,
-                                style = MaterialTheme.typography.bodySmall
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(start = 16.dp, top = 4.dp)
                             )
                         }
 
-                        uiState.errorMessage?.let { error ->
-                            Spacer(modifier = Modifier.height(4.dp))
+                        if (uiState.errorMessage != null) {
                             Text(
-                                text = error,
+                                text = uiState.errorMessage!!,
                                 color = errorColor,
-                                style = MaterialTheme.typography.bodySmall
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(start = 16.dp, top = 4.dp)
                             )
                         }
 
@@ -294,109 +317,70 @@ fun SignUpScreen(
                         Button(
                             onClick = {
                                 focusManager.clearFocus()
-                                viewModel.signUp(email, password, displayName, studentId, userType) {
-                                    navController.navigate(Screen.Home.route) { popUpTo(0) }
-                                }
+                                viewModel.signUp(
+                                    email = email,
+                                    password = password,
+                                    displayName = displayName,
+                                    studentId = studentId,
+                                    userType = userType,
+                                    onSuccess = {
+                                        navController.navigate(Screen.Home.route) {
+                                            popUpTo(Screen.Onboarding.route) { inclusive = true }
+                                        }
+                                    }
+                                )
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(52.dp),
-                            shape = RoundedCornerShape(14.dp),
+                                .height(56.dp),
+                            shape = RoundedCornerShape(16.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor   = Color.White,
-                                disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
-                                disabledContentColor   = Color.White.copy(alpha = 0.6f)
+                                containerColor = if (isDark) Color(0xFFBB86FC) else Color(0xFF6200EE)
                             ),
-                            enabled = email.isNotBlank() && password.isNotBlank() && !uiState.isLoading
+                            enabled = email.isNotEmpty() && password.isNotEmpty() &&
+                                      displayName.isNotEmpty() && studentId.isNotEmpty() &&
+                                      !passwordMismatch && !uiState.isLoading
                         ) {
-                            if (uiState.isLoading)
+                            if (uiState.isLoading) {
                                 CircularProgressIndicator(
-                                    modifier = Modifier.size(22.dp),
+                                    modifier = Modifier.size(24.dp),
                                     color = Color.White,
                                     strokeWidth = 2.dp
                                 )
-                            else
+                            } else {
                                 Text(
-                                    "Create Account",
+                                    "Sign Up",
                                     style = MaterialTheme.typography.titleMedium.copy(
-                                        fontWeight = FontWeight.SemiBold
+                                        fontWeight = FontWeight.Bold
                                     )
                                 )
+                            }
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(32.dp))
 
-                // ── Divider ────────────────────────────────────────────────
+                // ── Footer ──────────────────────────────────────────────────
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    HorizontalDivider(modifier = Modifier.weight(1f), color = dividerColor)
                     Text(
-                        text = "  or  ",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = subtitleColor
-                    )
-                    HorizontalDivider(modifier = Modifier.weight(1f), color = dividerColor)
-                }
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                // ── Google button ──────────────────────────────────────────
-                OutlinedButton(
-                    onClick = { /* TODO: Google Sign-Up */ },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        containerColor = googleBg,
-                        contentColor   = googleText
-                    ),
-                    border = BorderStroke(1.5.dp, googleBorder)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.google_logo),
-                            contentDescription = "Google",
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text(
-                            text = "Continue with Google",
-                            style = MaterialTheme.typography.bodyLarge.copy(
-                                fontWeight = FontWeight.Medium
-                            ),
-                            color = googleText
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(28.dp))
-
-                // ── Bottom link ────────────────────────────────────────────
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        "Already have an account?",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = bottomTextColor.copy(alpha = 0.7f)
+                        text = "Already have an account? ",
+                        color = bottomTextColor
                     )
                     TextButton(onClick = { navController.navigate(Screen.SignIn.route) }) {
                         Text(
-                            "Sign In",
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
+                            text = "Login",
+                            color = if (isDark) Color(0xFFBB86FC) else Color(0xFF6200EE),
+                            fontWeight = FontWeight.Bold
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(40.dp))
+                Spacer(modifier = Modifier.height(32.dp))
             }
         }
     }

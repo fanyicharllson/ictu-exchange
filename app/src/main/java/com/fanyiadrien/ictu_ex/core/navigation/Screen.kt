@@ -20,18 +20,26 @@ sealed class Screen(val route: String) {
     object Camera        : Screen("camera")
     object Cart          : Screen("cart")
     object Notifications : Screen("notifications")
+
+    // Chat list — shows all conversations the current user is part of
+    object ChatList : Screen("chat_list")
+
+    // Individual chat — opened directly with a threadId
+    object Chat : Screen("chat/{threadId}") {
+        fun createRoute(threadId: String) = "chat/$threadId"
+    }
+
+    // Legacy deep-link entry: open/create a thread from ItemDetail then go to Chat
     object Messages : Screen("messages") {
-        const val sellerIdArg = "sellerId"
+        const val sellerIdArg  = "sellerId"
         const val listingIdArg = "listingId"
         const val routeWithArgs = "messages?$sellerIdArg={$sellerIdArg}&$listingIdArg={$listingIdArg}"
-
         fun createRoute(sellerId: String? = null, listingId: String? = null): String {
-            if (sellerId.isNullOrBlank() && listingId.isNullOrBlank()) return route
             val params = buildList {
-                if (!sellerId.isNullOrBlank()) add("$sellerIdArg=$sellerId")
+                if (!sellerId.isNullOrBlank())  add("$sellerIdArg=$sellerId")
                 if (!listingId.isNullOrBlank()) add("$listingIdArg=$listingId")
             }
-            return "$route?${params.joinToString("&")}" 
+            return if (params.isEmpty()) route else "$route?${params.joinToString("&")}"
         }
     }
     object MyActivity    : Screen("my_activity")
