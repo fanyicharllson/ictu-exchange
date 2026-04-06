@@ -7,6 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -14,10 +15,12 @@ import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.rounded.ArrowBackIosNew
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
@@ -44,8 +47,6 @@ fun SignInScreen(
     val isDark = isSystemInDarkTheme()
 
     // ── Theme tokens ──────────────────────────────────────────────────────────
-    // Light: white card, purple accents, black text, black borders
-    // Dark : dark-surface card, soft purple accents, white text, white borders
     val cardBg          = if (isDark) Color(0xFF2B2930) else Color.White
     val cardContent     = if (isDark) Color(0xFFEADDFF) else Color(0xFF1C1B1F)
     val fieldText       = if (isDark) Color(0xFFEADDFF) else Color(0xFF1C1B1F)
@@ -59,7 +60,6 @@ fun SignInScreen(
     val subtitleColor   = if (isDark) Color(0xFFCCC2DC) else Color(0xFF49454F)
     val bottomTextColor = MaterialTheme.colorScheme.onBackground
 
-    // Google button: white bg + black border in light; dark surface + purple border in dark
     val googleBg        = if (isDark) Color(0xFF2B2930) else Color.White
     val googleBorder    = if (isDark) Color(0xFFBB86FC) else Color.Black
     val googleText      = if (isDark) Color(0xFFEADDFF) else Color(0xFF1C1B1F)
@@ -86,6 +86,22 @@ fun SignInScreen(
                         shape = RoundedCornerShape(bottomStart = 56.dp, bottomEnd = 56.dp)
                     )
             )
+
+            // ── Back Button ─────────────────────────────────────────────
+            IconButton(
+                onClick = { navController.popBackStack() },
+                modifier = Modifier
+                    .statusBarsPadding()
+                    .padding(16.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.2f))
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.ArrowBackIosNew,
+                    contentDescription = "Back",
+                    tint = Color.White
+                )
+            }
 
             Column(
                 modifier = Modifier

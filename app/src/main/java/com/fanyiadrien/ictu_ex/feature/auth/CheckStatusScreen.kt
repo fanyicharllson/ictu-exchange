@@ -3,6 +3,8 @@ package com.fanyiadrien.ictu_ex.feature.auth
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.ArrowBackIosNew
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -20,12 +22,30 @@ import com.fanyiadrien.ictu_ex.ui.theme.IctuExTheme
 
 private const val TAG = "ICTU_CheckStatus"
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CheckStatusScreen(navController: NavController) {
     Log.d(TAG, "CheckStatusScreen composed")
 
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+            TopAppBar(
+                title = {},
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(
+                            imageVector = Icons.Rounded.ArrowBackIosNew,
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.onBackground
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent
+                )
+            )
+        }
     ) { paddingValues ->
         Column(
             modifier = Modifier

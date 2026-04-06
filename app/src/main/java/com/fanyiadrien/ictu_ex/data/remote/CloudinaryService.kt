@@ -15,49 +15,36 @@ import kotlin.coroutines.resume
 @Singleton
 class CloudinaryService @Inject constructor() {
 
-    /**
-     * Uploads an image to Cloudinary and returns the secure URL.
-     *
-     * @param context  Android context (needed by Cloudinary SDK)
-     * @param imageUri URI of the image picked from gallery
-     * @param folder   Cloudinary folder to organise uploads (e.g. "listings", "profiles")
-     *
-     * Usage:
-     *   val result = cloudinaryService.uploadImage(context, uri, "listings")
-     *   when (result) {
-     *       is AppResult.Success -> saveUrlToFirestore(result.data)
-     *       is AppResult.Error   -> showError(result.message)
-     *   }
-     */
     suspend fun uploadImage(
         context: Context,
         imageUri: Uri,
         folder: String = "listings"
     ): AppResult<String> = suspendCancellableCoroutine { continuation ->
 
-        // Check file size before uploading (5MB limit)
-        val fileSizeBytes = context.contentResolver
-            .openFileDescriptor(imageUri, "r")?.statSize ?: 0L
-        val fiveMbInBytes = 5 * 1024 * 1024L
+        // Check file size before uploading (5 MB limit)
+        val fileSizeBytes = try {
+            context.contentResolver.openFileDescriptor(imageUri, "r")?.use { it.statSize } ?: 0L
+        } catch (e: Exception) {
+            0L
+        }
 
-        if (fileSizeBytes > fiveMbInBytes) {
-            continuation.resume(AppResult.Error(AppError.IMAGE_TOO_LARGE))
+        if (fileSizeBytes > 5 * 1024 * 1024L) {
+            if (continuation.isActive) continuation.resume(AppResult.Error(AppError.IMAGE_TOO_LARGE))
             return@suspendCancellableCoroutine
         }
 
-        MediaManager.get()
+        val requestId = MediaManager.get()
             .upload(imageUri)
             .option("folder", folder)
             .option("resource_type", "image")
             .callback(object : UploadCallback {
 
-                override fun onStart(requestId: String) { /* upload started */ }
+                override fun onStart(requestId: String) {}
 
-                override fun onProgress(requestId: String, bytes: Long, totalBytes: Long) {
-                    // Optional: emit progress if you want a progress bar
-                }
+                override fun onProgress(requestId: String, bytes: Long, totalBytes: Long) {}
 
                 override fun onSuccess(requestId: String, resultData: Map<*, *>) {
+                    if (!continuation.isActive) return
                     val secureUrl = resultData["secure_url"] as? String
                     if (secureUrl != null) {
                         continuation.resume(AppResult.Success(secureUrl))
@@ -67,6 +54,7 @@ class CloudinaryService @Inject constructor() {
                 }
 
                 override fun onError(requestId: String, error: ErrorInfo) {
+                    if (!continuation.isActive) return
                     continuation.resume(
                         AppResult.Error(
                             message = AppError.IMAGE_UPLOAD_FAILED,
@@ -76,9 +64,15 @@ class CloudinaryService @Inject constructor() {
                 }
 
                 override fun onReschedule(requestId: String, error: ErrorInfo) {
+                    if (!continuation.isActive) return
                     continuation.resume(AppResult.Error(AppError.NETWORK_ERROR))
                 }
             })
             .dispatch(context)
+
+        // Cancel the Cloudinary upload if the coroutine is cancelled
+        continuation.invokeOnCancellation {
+            try { MediaManager.get().cancelRequest(requestId) } catch (_: Exception) {}
+        }
     }
 }

@@ -111,11 +111,12 @@ fun IctuBottomNav(
                     )
                 }
 
-                // ── Messages (Shared) ─────────────────────────────────────
+                // ── Chats (Shared) ────────────────────────────────────────
                 MessageNavItem(
-                    selected    = currentRoute?.startsWith(Screen.Messages.route) == true,
+                    selected    = currentRoute == Screen.ChatList.route
+                                    || currentRoute?.startsWith("chat/") == true,
                     unreadCount = unreadCount,
-                    onClick     = { navController.navigate(Screen.Messages.route) }
+                    onClick     = { navController.navigate(Screen.ChatList.route) }
                 )
 
                 // ── Profile ───────────────────────────────────────────────
