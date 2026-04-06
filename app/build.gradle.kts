@@ -1,5 +1,3 @@
-import java.util.Properties
-
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -8,9 +6,6 @@ plugins {
     alias(libs.plugins.googleServices)
     alias(libs.plugins.daggerHiltAndroid)
 }
-
-val localProps = Properties()
-localProps.load(rootProject.file("local.properties").inputStream())
 
 android {
     namespace = "com.fanyiadrien.ictu_ex"
@@ -25,21 +20,10 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        buildConfigField(
-            "String",
-            "CLOUDINARY_CLOUD_NAME",
-            "\"${localProps.getProperty("CLOUDINARY_CLOUD_NAME")}\""
-        )
-        buildConfigField(
-            "String",
-            "CLOUDINARY_API_KEY",
-            "\"${localProps.getProperty("CLOUDINARY_API_KEY")}\""
-        )
-        buildConfigField(
-            "String",
-            "CLOUDINARY_API_SECRET",
-            "\"${localProps.getProperty("CLOUDINARY_API_SECRET")}\""
-        )
+        // Enable buildConfig and add placeholders for Cloudinary
+        buildConfigField("String", "CLOUDINARY_CLOUD_NAME", "\"your_cloud_name\"")
+        buildConfigField("String", "CLOUDINARY_API_KEY", "\"your_api_key\"")
+        buildConfigField("String", "CLOUDINARY_API_SECRET", "\"your_api_secret\"")
     }
 
     buildTypes {
@@ -67,6 +51,7 @@ android {
 dependencies {
 
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
@@ -76,7 +61,6 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.material.icons.extended)
     implementation(libs.androidx.navigation.compose)
-    implementation(libs.androidx.core.splashscreen)
 
     // ICTU-Ex Features
     implementation(libs.androidx.biometric)

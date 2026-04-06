@@ -11,6 +11,7 @@ import com.fanyiadrien.ictu_ex.data.model.Listing
 import com.fanyiadrien.ictu_ex.data.model.ListingCategory
 import com.fanyiadrien.ictu_ex.data.remote.CloudinaryService
 import com.fanyiadrien.ictu_ex.data.repository.ListingRepository
+import com.fanyiadrien.ictu_ex.data.repository.NotificationRepository
 import com.fanyiadrien.ictu_ex.data.repository.UserRepository
 import com.fanyiadrien.ictu_ex.utils.AppError
 import com.fanyiadrien.ictu_ex.utils.AppResult
@@ -22,7 +23,8 @@ import javax.inject.Inject
 class PostItemViewModel @Inject constructor(
     private val cloudinaryService: CloudinaryService,
     private val listingRepository: ListingRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val notificationRepository: NotificationRepository
 ) : ViewModel() {
 
     var uiState by mutableStateOf(PostItemUiState())
@@ -120,6 +122,14 @@ class PostItemViewModel @Inject constructor(
 
             when (val saveResult = listingRepository.postListing(listing)) {
                 is AppResult.Success -> {
+                    // Notify all buyers about the new listing
+                    notificationRepository.notifyBuyersNewListing(
+                        sellerId     = saveResult.data.sellerId,
+                        sellerName   = sellerStudentId.ifBlank { "A seller" },
+                        listingTitle = saveResult.data.title,
+                        listingId    = saveResult.data.id,
+                        priceXaf     = saveResult.data.price
+                    )
                     uiState = uiState.copy(isSaving = false, isSuccess = true)
                     onSuccess()
                 }
