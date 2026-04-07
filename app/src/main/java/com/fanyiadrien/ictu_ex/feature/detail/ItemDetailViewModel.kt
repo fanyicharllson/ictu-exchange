@@ -10,6 +10,7 @@ import com.fanyiadrien.ictu_ex.data.model.Listing
 import com.fanyiadrien.ictu_ex.data.model.User
 import com.fanyiadrien.ictu_ex.data.repository.CartRepository
 import com.fanyiadrien.ictu_ex.data.repository.ListingRepository
+import com.fanyiadrien.ictu_ex.data.repository.NotificationRepository
 import com.fanyiadrien.ictu_ex.data.repository.UserRepository
 import com.fanyiadrien.ictu_ex.utils.AppResult
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -21,6 +22,7 @@ class ItemDetailViewModel @Inject constructor(
     private val listingRepository: ListingRepository,
     private val userRepository: UserRepository,
     private val cartRepository: CartRepository,
+    private val notificationRepository: NotificationRepository,
     savedStateHandle: SavedStateHandle         // reads listingId from nav args automatically
 ) : ViewModel() {
 
@@ -39,6 +41,12 @@ class ItemDetailViewModel @Inject constructor(
         uiState.listing?.let {
             cartRepository.addListing(it)
             uiState = uiState.copy(inCart = true, cartAddedEvent = uiState.cartAddedEvent + 1)
+            viewModelScope.launch {
+                notificationRepository.notifyBuyerCartAdded(
+                    listingId = it.id,
+                    itemSummary = "${it.title} added to cart"
+                )
+            }
         }
     }
 

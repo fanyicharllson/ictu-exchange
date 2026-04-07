@@ -8,9 +8,12 @@ import androidx.lifecycle.viewModelScope
 import com.fanyiadrien.ictu_ex.core.navigation.Screen
 import com.fanyiadrien.ictu_ex.data.model.ChatMessage
 import com.fanyiadrien.ictu_ex.data.model.ChatThread
+import com.fanyiadrien.ictu_ex.data.model.User
 import com.fanyiadrien.ictu_ex.data.remote.CloudinaryService
 import com.fanyiadrien.ictu_ex.data.repository.MessagesRepository
+import com.fanyiadrien.ictu_ex.data.repository.UserRepository
 import com.fanyiadrien.ictu_ex.utils.AppResult
+import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,13 +26,18 @@ import javax.inject.Inject
 class ChatViewModel @Inject constructor(
     private val messagesRepository: MessagesRepository,
     private val cloudinaryService: CloudinaryService,
+    private val userRepository: UserRepository,
+    private val auth: FirebaseAuth,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ChatUiState())
     val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
+    private var lastResolvedOtherUid: String? = null
 
     init {
+        loadCurrentUser()
+
         // Route 1: opened from ChatListScreen — threadId is known
         val threadId = savedStateHandle.get<String>("threadId")
 
@@ -46,6 +54,15 @@ class ChatViewModel @Inject constructor(
         }
     }
 
+    private fun loadCurrentUser() {
+        viewModelScope.launch {
+            when (val result = userRepository.getCurrentUser()) {
+                is AppResult.Success -> _uiState.update { it.copy(currentUser = result.data) }
+                else -> Unit
+            }
+        }
+    }
+
     // ── Open an existing thread ───────────────────────────────────────────────
 
     private fun openThread(threadId: String) {
@@ -58,6 +75,15 @@ class ChatViewModel @Inject constructor(
     // ── Create (or reuse) a thread then open it ───────────────────────────────
 
     private fun createAndOpenThread(sellerId: String, listingId: String?) {
+        if (sellerId == auth.currentUser?.uid) {
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    errorMessage = "You cannot start a chat with yourself."
+                )
+            }
+            return
+        }
         _uiState.update { it.copy(isLoading = true) }
         viewModelScope.launch {
             when (val result = messagesRepository.ensureThread(sellerId, listingId)) {
@@ -85,7 +111,24 @@ class ChatViewModel @Inject constructor(
     private fun observeThread(threadId: String) {
         viewModelScope.launch {
             messagesRepository.observeThread(threadId).collect { thread ->
-                if (thread != null) _uiState.update { it.copy(thread = thread) }
+                if (thread != null) {
+                    _uiState.update { it.copy(thread = thread) }
+                    resolveOtherUserType(thread)
+                }
+            }
+        }
+    }
+
+    private fun resolveOtherUserType(thread: ChatThread) {
+        val currentUid = auth.currentUser?.uid ?: return
+        val otherUid = thread.participantIds.firstOrNull { it != currentUid } ?: return
+        if (lastResolvedOtherUid == otherUid) return
+        lastResolvedOtherUid = otherUid
+
+        viewModelScope.launch {
+            when (val result = userRepository.getUserById(otherUid)) {
+                is AppResult.Success -> _uiState.update { it.copy(otherUserType = result.data.userType) }
+                else -> _uiState.update { it.copy(otherUserType = null) }
             }
         }
     }
@@ -139,6 +182,8 @@ class ChatViewModel @Inject constructor(
 data class ChatUiState(
     val threadId: String? = null,
     val thread: ChatThread? = null,
+    val currentUser: User? = null,
+    val otherUserType: String? = null,
     val messages: List<ChatMessage> = emptyList(),
     val composerText: String = "",
     val isLoading: Boolean = true,

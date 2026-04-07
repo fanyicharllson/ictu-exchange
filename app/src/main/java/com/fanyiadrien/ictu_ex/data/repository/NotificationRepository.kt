@@ -151,6 +151,28 @@ class NotificationRepository @Inject constructor(
             )).await()
     }
 
+    /**
+     * Written when a buyer adds a listing to the cart.
+     * This feeds the existing unread badge and lets the notification item open Cart.
+     */
+    suspend fun notifyBuyerCartAdded(
+        listingId: String,
+        itemSummary: String
+    ) {
+        val buyerId = auth.currentUser?.uid ?: return
+        val notifId = UUID.randomUUID().toString()
+        firestore.collection("notifications")
+            .document(buyerId).collection("items").document(notifId)
+            .set(mapOf(
+                "notifId"     to notifId,
+                "type"        to "CART_ADDED",
+                "listingId"   to listingId,
+                "itemSummary" to itemSummary,
+                "read"        to false,
+                "createdAt"   to System.currentTimeMillis()
+            )).await()
+    }
+
     // ── Mark read / delete ────────────────────────────────────────────────────
 
     suspend fun markAsRead(notifId: String) {

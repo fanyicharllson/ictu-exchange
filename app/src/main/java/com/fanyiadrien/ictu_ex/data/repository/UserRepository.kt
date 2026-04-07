@@ -30,6 +30,7 @@ class UserRepository @Inject constructor(
                 .await()
 
             val user = doc.toObject(User::class.java)
+                ?.copy(uid = doc.id)
                 ?: return AppResult.Error(AppError.FETCH_FAILED)
 
             AppResult.Success(user)
@@ -97,6 +98,7 @@ class UserRepository @Inject constructor(
                 .await()
 
             val user = doc.toObject(User::class.java)
+                ?.copy(uid = doc.id)
                 ?: return AppResult.Error(AppError.FETCH_FAILED)
 
             AppResult.Success(user)

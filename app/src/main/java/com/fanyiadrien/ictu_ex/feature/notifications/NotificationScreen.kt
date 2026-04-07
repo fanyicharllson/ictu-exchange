@@ -19,6 +19,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.fanyiadrien.ictu_ex.core.navigation.Screen
 import com.fanyiadrien.ictu_ex.data.model.Notification
 import java.text.SimpleDateFormat
 import java.util.*
@@ -60,7 +61,12 @@ fun NotificationScreen(
                 items(notifications, key = { it.notifId }) { notification ->
                     NotificationItem(
                         notification = notification,
-                        onRead       = { viewModel.markAsRead(notification.notifId) },
+                        onClick      = {
+                            viewModel.markAsRead(notification.notifId)
+                            if (notification.type == "CART_ADDED") {
+                                navController.navigate(Screen.Cart.route)
+                            }
+                        },
                         onDelete     = { viewModel.deleteNotification(notification.notifId) }
                     )
                 }
@@ -72,7 +78,7 @@ fun NotificationScreen(
 @Composable
 private fun NotificationItem(
     notification: Notification,
-    onRead: () -> Unit,
+    onClick: () -> Unit,
     onDelete: () -> Unit
 ) {
     val dateString = remember(notification.createdAt) {
@@ -84,11 +90,12 @@ private fun NotificationItem(
         "NEW_ORDER"    -> Icons.Rounded.ShoppingBag   to "New Order Received!"
         "NEW_LISTING"  -> Icons.Rounded.Storefront    to "New Item on Campus!"
         "ORDER_PLACED" -> Icons.Rounded.CheckCircle   to "Order Confirmed!"
+        "CART_ADDED"   -> Icons.Rounded.ShoppingCart  to "Added to Cart"
         else           -> Icons.Rounded.Notifications to "Notification"
     }
 
     Card(
-        onClick  = onRead,
+        onClick  = onClick,
         shape    = RoundedCornerShape(16.dp),
         colors   = CardDefaults.cardColors(
             containerColor = if (notification.read)

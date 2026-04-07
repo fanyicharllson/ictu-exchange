@@ -79,13 +79,16 @@ fun ItemDetailScreen(
                         onBack      = { navController.popBackStack() },
                         onAddToCart = viewModel::addToCart,
                         onChatSeller = {
-                            val listing = uiState.listing!!
-                            navController.navigate(
-                                Screen.Messages.createRoute(
-                                    sellerId = listing.sellerId,
-                                    listingId = listing.id
-                                )
-                            )
+                            uiState.listing?.let { listing ->
+                                if (uiState.currentUser?.uid != listing.sellerId) {
+                                    navController.navigate(
+                                        Screen.Messages.createRoute(
+                                            sellerId = listing.sellerId,
+                                            listingId = listing.id
+                                        )
+                                    )
+                                }
+                            }
                         }
                     )
                 }
@@ -269,6 +272,7 @@ private fun DetailContent(
             // ── Action buttons ────────────────────────────────────────────
             ActionButtons(
                 isBuyer      = uiState.isBuyer,
+                canChatSeller = uiState.currentUser?.uid != listing.sellerId,
                 inCart       = uiState.inCart,
                 onAddToCart  = onAddToCart,
                 onChatSeller = onChatSeller
@@ -427,6 +431,7 @@ private fun DetailChip(
 @Composable
 private fun ActionButtons(
     isBuyer: Boolean,
+    canChatSeller: Boolean,
     inCart: Boolean,
     onAddToCart: () -> Unit,
     onChatSeller: () -> Unit
@@ -435,15 +440,17 @@ private fun ActionButtons(
         modifier              = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        OutlinedButton(
-            onClick  = onChatSeller,
-            modifier = Modifier.weight(1f).height(54.dp),
-            shape = MaterialTheme.shapes.large,
-            border = ButtonDefaults.outlinedButtonBorder
-        ) {
-            Icon(Icons.AutoMirrored.Rounded.Chat, contentDescription = null, modifier = Modifier.size(18.dp))
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Chat Seller", style = MaterialTheme.typography.titleSmall)
+        if (canChatSeller) {
+            OutlinedButton(
+                onClick  = onChatSeller,
+                modifier = Modifier.weight(1f).height(54.dp),
+                shape = MaterialTheme.shapes.large,
+                border = ButtonDefaults.outlinedButtonBorder(enabled = true)
+            ) {
+                Icon(Icons.AutoMirrored.Rounded.Chat, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Chat Seller", style = MaterialTheme.typography.titleSmall)
+            }
         }
 
         if (isBuyer) {
