@@ -56,8 +56,6 @@ class NotificationRepository @Inject constructor(
 
     /**
      * Called by PostItemViewModel after a listing is saved to Firestore.
-     * Fetches every user with userType == "BUYER" and batch-writes a
-     * NEW_LISTING notification to each one.
      */
     suspend fun notifyBuyersNewListing(
         sellerId: String,
@@ -99,10 +97,6 @@ class NotificationRepository @Inject constructor(
         batch.commit().await()
     }
 
-    /**
-     * Called by CartRepository.checkout() for each unique seller in the cart.
-     * Writes a NEW_ORDER notification to the seller.
-     */
     suspend fun notifySellerNewOrder(
         sellerId: String,
         buyerId: String,
@@ -127,10 +121,6 @@ class NotificationRepository @Inject constructor(
             )).await()
     }
 
-    /**
-     * Called by CartRepository.checkout() once for the buyer.
-     * Confirms their order was placed successfully.
-     */
     suspend fun notifyBuyerOrderPlaced(
         buyerId: String,
         orderId: String,
@@ -167,8 +157,13 @@ class NotificationRepository @Inject constructor(
                 "type"        to "ITEM_FAVORITED",
                 "listingId"   to listingId,
                 "itemSummary" to "You added \"$listingTitle\" to your favorites.",
+                "read"        to false,
+                "createdAt"   to System.currentTimeMillis()
+            )).await()
+    }
+
+    /**
      * Written when a buyer adds a listing to the cart.
-     * This feeds the existing unread badge and lets the notification item open Cart.
      */
     suspend fun notifyBuyerCartAdded(
         listingId: String,

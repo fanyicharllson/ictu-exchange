@@ -90,15 +90,3 @@ The codebase is organised into the following top-level packages under `com.ictu.
 4. Build and run on a physical device or emulator (API 26+).
 
 > **Note:** Biometric and sensor features require a physical device for full functionality. The test suite uses simulated data and runs on both emulators and physical devices.
-
-
-
-
-
-
-prompt:
-
-
-the chat thread in the code, is it like the list of chats the seller is to chat with or buyyer?? cuz what what i had in my mind is this, when a buyyer click chat, it navigates to the chat screen where there will see the list of sellers in the diplayed, now, they can click say a buy and it navigates to chat page to meesgae that seller....
-Now in the listing detail screen, when a buyer click the chat sellet in opens that screen with thast seller directly ....
-But out current implmentation don't implemet that. Also add notification i con deside that cart icon for ntification cuz it implemtneted in the cod already...
