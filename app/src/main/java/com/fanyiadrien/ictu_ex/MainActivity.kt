@@ -1,6 +1,7 @@
 package com.fanyiadrien.ictu_ex
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.compose.animation.*
 import androidx.compose.foundation.Image
@@ -36,7 +37,9 @@ import com.fanyiadrien.ictu_ex.ui.theme.IctuExTheme
 import com.fanyiadrien.ictu_ex.ui.theme.ThemeMode
 import dagger.hilt.android.AndroidEntryPoint
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -44,6 +47,9 @@ class MainActivity : FragmentActivity() {
 
     @Inject
     lateinit var auth: FirebaseAuth
+
+    @Inject
+    lateinit var firestore: FirebaseFirestore
 
     @Inject
     lateinit var lightSensorManager: LightSensorManager
@@ -59,6 +65,7 @@ class MainActivity : FragmentActivity() {
             val sensorIsDark by lightSensorManager.isDark.collectAsState()
             var themeMode by rememberSaveable { mutableStateOf(ThemeMode.AUTO) }
             var showShakeReport by remember { mutableStateOf(false) }
+            val scope = rememberCoroutineScope()
 
             LaunchedEffect(Unit) {
                 shakeSensorManager.onShake.collect {
@@ -78,7 +85,6 @@ class MainActivity : FragmentActivity() {
 
             LaunchedEffect(Unit) {
                 delay(1000) 
-                
                 val currentUser = auth.currentUser
                 if (currentUser != null) {
                     if (BiometricHelper.isAvailable(this@MainActivity)) {
@@ -88,10 +94,8 @@ class MainActivity : FragmentActivity() {
                                 startDestination = Screen.Home.route
                                 isLoading = false
                             },
-                            onFailure = { /* Handled by Biometric prompt */ },
-                            onError = { error ->
-                                biometricError = error
-                            }
+                            onFailure = { /* Handled by prompt */ },
+                            onError = { error -> biometricError = error }
                         )
                     } else {
                         startDestination = Screen.Home.route
@@ -125,7 +129,15 @@ class MainActivity : FragmentActivity() {
                             )
 
                             if (showShakeReport) {
-                                ShakeReportModal(onDismiss = { showShakeReport = false })
+                                ShakeReportModal(
+                                    onDismiss = { showShakeReport = false },
+                                    onSubmit = { message ->
+                                        scope.launch {
+                                            submitReport(message)
+                                            showShakeReport = false
+                                        }
+                                    }
+                                )
                             }
                         }
                     }
@@ -134,8 +146,25 @@ class MainActivity : FragmentActivity() {
         }
     }
 
+    private fun submitReport(message: String) {
+        val uid = auth.currentUser?.uid ?: "anonymous"
+        val report = mapOf(
+            "uid" to uid,
+            "message" to message,
+            "timestamp" to System.currentTimeMillis()
+        )
+        
+        firestore.collection("reports").add(report)
+            .addOnSuccessListener {
+                Toast.makeText(this, "Report Received! 🛡️ We'll look into it.", Toast.LENGTH_LONG).show()
+            }
+            .addOnFailureListener {
+                Toast.makeText(this, "Failed to send report. Please check connection.", Toast.LENGTH_SHORT).show()
+            }
+    }
+
     @Composable
-    private fun ShakeReportModal(onDismiss: () -> Unit) {
+    private fun ShakeReportModal(onDismiss: () -> Unit, onSubmit: (String) -> Unit) {
         var reportText by remember { mutableStateOf("") }
         
         Dialog(
@@ -207,7 +236,7 @@ class MainActivity : FragmentActivity() {
                             Text("Cancel")
                         }
                         Button(
-                            onClick = { onDismiss() },
+                            onClick = { onSubmit(reportText) },
                             modifier = Modifier.weight(1f).height(50.dp),
                             shape = RoundedCornerShape(14.dp),
                             enabled = reportText.isNotBlank()
@@ -236,66 +265,24 @@ class MainActivity : FragmentActivity() {
                     contentDescription = "ICTU-Exchange Logo",
                     modifier = Modifier.size(120.dp)
                 )
-                
                 Spacer(modifier = Modifier.height(32.dp))
-
                 if (errorMessage != null) {
-                    Text(
-                        text = "Identity Verification Required",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.error
-                    )
+                    Text("Identity Verification Required", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.error)
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = errorMessage,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Text(errorMessage, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(modifier = Modifier.height(24.dp))
-                    Button(
-                        onClick = onRetry,
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
-                    ) {
-                        Text("Retry Verification")
-                    }
+                    Button(onClick = onRetry, shape = RoundedCornerShape(12.dp)) { Text("Retry Verification") }
                 } else {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(40.dp),
-                        color = MaterialTheme.colorScheme.primary,
-                        strokeWidth = 3.dp
-                    )
+                    CircularProgressIndicator(modifier = Modifier.size(40.dp), color = MaterialTheme.colorScheme.primary, strokeWidth = 3.dp)
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "ICTU-Exchange",
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "Secure Student Marketplace",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Text("ICTU-Exchange", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                    Text("Secure Student Marketplace", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
-
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(bottom = 32.dp),
-                contentAlignment = Alignment.BottomCenter
-            ) {
+            Box(modifier = Modifier.fillMaxSize().padding(bottom = 32.dp), contentAlignment = Alignment.BottomCenter) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = "Made by",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                    )
-                    Text(
-                        text = "Charllson & Adrien",
-                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                    Text("Made by", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f))
+                    Text("Charllson & Adrien", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold), color = MaterialTheme.colorScheme.primary)
                 }
             }
         }
